@@ -10,7 +10,8 @@ class Category(StrEnum):
 class EmailClassification(BaseModel):
     model_config = ConfigDict(str_strip_whitespace=True)
     category: Category
-    summary: str = Field(min_length=3, max_length=100)
+    # Checked locally only; the API schema omits length limits (see classifier.response_format).
+    summary: str = Field(min_length=3, max_length=200)
 
     @field_validator("category", mode="before")
     @classmethod

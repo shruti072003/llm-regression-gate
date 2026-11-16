@@ -24,8 +24,8 @@ The eval needs a closed set of labels. With a plain `str`, a made-up label like 
 **`StrEnum` instead of `(str, Enum)`**
 Both validate the same way, but `str(Category.BILLING)` gives `"billing"` with `StrEnum` and `"Category.BILLING"` with `(str, Enum)`. Categories will be written to SQLite, reports and Slack, so the plain value is what I want.
 
-**Summary must be 3–100 characters after stripping whitespace**
-The feature asks for a one-sentence summary. The minimum rejects empty or whitespace-only output (`str_strip_whitespace=True`). The maximum (about 15–20 words) rejects essays. *Revisit 100 once I see real model output.*
+**Summary must be 3–200 characters after stripping whitespace, checked locally only** *(revised in Step 1.5; was 100)*
+The minimum rejects empty or whitespace-only output (`str_strip_whitespace=True`). The maximum is a guard against essays, not a style rule; conciseness is judged by the LLM judge in Step 4. Raised from 100 because natural one-sentence summaries ran 73–109 characters in the smoke test. See "Length limits are not sent to the API" below for why it's local-only.
 
 **Category casing and whitespace are normalized before validation** (instead of strict matching)
 The model returning "Billing" for a billing email understood it correctly; only the formatting is off. Strict validation would count that as a wrong answer, mixing "wrong category" with "wrong format" in one number. Because LLM output varies even at temperature 0, it could also make CI fail at random. A `mode="before"` validator lowercases and strips the value, so accuracy measures understanding.
@@ -52,6 +52,7 @@ Rule for later: few-shot emails must never appear in the golden dataset (data le
 **Labeling policy (the prompt and the golden dataset must follow the same rules)**
 - Login and password problems are **account** (the customer's access or identity). An error page shown during login is **technical** (the product is broken).
 - *Chosen by Claude as defaults; confirm or change:* plan upgrades and downgrades are **billing**; closing an account is **account**; an email covering several topics gets the category of the main thing the customer needs resolved.
+- **Paid but not delivered is technical** *(Step 1.5)*: "I upgraded to Pro and paid, but the features aren't showing." The payment went through; the product didn't deliver, so the thing to resolve is technical. v1 says billing in 5/5 runs, a consistent failure for v2 to fix. Rule followed: never change a label because the model disagrees; decide what's right, then fix the prompt. Prompt versions are never edited after commit, so this goes into v2, not v1.
 
 ## Prompt loader (`prompts.py`)
 
@@ -75,7 +76,12 @@ One source of truth for the output format. An example can never teach the model 
 
 **Structured outputs: the API enforces the `EmailClassification` schema** (instead of JSON mode or prompt instructions only)
 An eval should test what I'd actually ship, and in production I'd use structured outputs. Generation is constrained to the schema, so invalid JSON and made-up categories become nearly impossible, and parse failures don't add noise to accuracy. Pydantic still validates locally, as defense in depth.
-Implementation detail: `responses.parse()` raises an exception on invalid output and discards the response, losing the raw text and token counts. So I call `responses.create()` with a schema built from `EmailClassification.model_json_schema()` and validate it myself. The API and the validator enforce the same contract from one source.
+Implementation detail: `responses.parse()` raises an exception on invalid output and discards the response, losing the raw text and token counts. So I call `responses.create()` with a schema built from `EmailClassification.model_json_schema()` and validate it myself. Both come from one source (`EmailClassification`), but deliberately differ in one way: see the next entry.
+
+**Length limits are not sent to the API; they're checked locally** *(Step 1.5)*
+Found in the smoke test: with `maxLength=100` in the structured-output schema, the API enforced the limit while generating. Summaries were cut mid-sentence ("…despite using the correct"), one ended in a Chinese word the model was forced into, and all of them still passed validation. That's an invisible failure. Now the API schema keeps structure (keys, category enum) and drops `minLength`/`maxLength`, and the local validator checks length, so a too-long summary is a visible `invalid_output`.
+Side effect: the squeezed email went from 4 different summaries in 5 runs to 1. The constraint was causing part of the variation I'd have blamed on non-determinism.
+Lesson: a constraint enforced during generation changes what the model writes, not just what gets accepted. Validate after generation when you need to see the violation.
 
 **`classify()` always returns a `ClassificationOutcome`, never raises** (instead of exceptions or `None`)
 One bad case can't crash an 80-case run, and every failure keeps its evidence for the diff report: raw output, error type and message, latency, tokens, attempts, served model.
@@ -92,4 +98,12 @@ One bad case can't crash an 80-case run, and every failure keeps its evidence fo
 - **Record `category_normalized`** by comparing the raw category to the validated one. That's the format-compliance signal from the casing decision. With structured outputs it should almost always be false; if it isn't, that's worth investigating.
 - **The client is passed in,** not created inside `classify()`. One client is shared across the run, and tests substitute a fake one, so they run without network or cost.
 
-**Open question from the first real call:** the summary was 99 characters, right at the 100 limit. With structured outputs the API may enforce `maxLength` while generating, which could cut summaries mid-sentence while still passing validation. Check in Step 1.5 across several emails.
+## Smoke test findings (Step 1.5, v1, 6 emails × 5 runs, after the length fix)
+
+**Temperature 0 is not fully deterministic** (prediction before measuring: "mostly identical, some variation", which was correct)
+- Category: identical across all 5 runs for 6/6 emails. A category flip in CI is a real signal.
+- Summary: word-for-word identical for 4/6 emails; the rest differ in wording ("on Windows 11 version 4.2" vs. "on version 4.2 with Windows 11"). Exact-match comparison of summaries would report false regressions every run, so summaries must be scored on meaning (LLM judge, Step 4).
+- The emails in `scripts/smoke_test.py` are LLM-written and must never go into the golden dataset.
+
+**Changing classifier code changes outputs, just like changing a prompt**
+The length fix changed v1's results without touching `prompts/v1.yaml`. So the CI gate (Step 8) must run when the classifier or schema changes, not only when `prompts/` changes.

@@ -73,12 +73,27 @@ def build_input(email: str, config: PromptConfig) -> list[dict]:
     return messages
 
 
+# Length limits are left out of the API schema on purpose. Enforced during
+# generation, maxLength cut summaries off mid-sentence (and forced odd tokens),
+# yet the result still passed validation. Checked locally instead, so a
+# too-long summary becomes a visible invalid_output failure.
+API_SCHEMA_EXCLUDED_KEYS = {"minLength", "maxLength"}
+
+
 def response_format() -> dict:
-    """Structured-output schema built from EmailClassification, so the API and
-    the local validator enforce the same contract."""
-    schema = EmailClassification.model_json_schema()
+    """Structured-output schema built from EmailClassification. The API enforces
+    structure (keys, category enum); the local validator also enforces length."""
+    schema = _without_keys(EmailClassification.model_json_schema(), API_SCHEMA_EXCLUDED_KEYS)
     schema["additionalProperties"] = False
     return {"type": "json_schema", "name": "email_classification", "schema": schema, "strict": True}
+
+
+def _without_keys(node, keys: set[str]):
+    if isinstance(node, dict):
+        return {k: _without_keys(v, keys) for k, v in node.items() if k not in keys}
+    if isinstance(node, list):
+        return [_without_keys(v, keys) for v in node]
+    return node
 
 
 async def classify(email: str, config: PromptConfig, client: AsyncOpenAI) -> ClassificationOutcome:

@@ -144,3 +144,16 @@ def test_few_shot_examples_become_user_assistant_pairs():
     assert [m["role"] for m in messages] == ["user", "assistant", "user"]
     assert messages[1]["content"] == '{"category":"billing","summary":"Duplicate charge."}'
     assert messages[-1]["content"] == "New email."
+
+
+def test_api_schema_omits_length_limits_but_keeps_category_enum():
+    schema = classifier.response_format()["schema"]
+    assert "maxLength" not in str(schema) and "minLength" not in str(schema)
+    assert schema["$defs"]["Category"]["enum"] == ["billing", "technical", "account", "general"]
+
+
+def test_too_long_summary_is_a_visible_failure():
+    long_summary = "x" * 201
+    out = run(FakeClient(fake_response(f'{{"category": "billing", "summary": "{long_summary}"}}')))
+    assert out.error_type is ErrorType.INVALID_OUTPUT
+    assert "200" in out.error_message
