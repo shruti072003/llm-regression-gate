@@ -52,3 +52,21 @@ Rule for later: few-shot emails must never appear in the golden dataset (data le
 **Labeling policy (the prompt and the golden dataset must follow the same rules)**
 - Login and password problems are **account** (the customer's access or identity). An error page shown during login is **technical** (the product is broken).
 - *Chosen by Claude as defaults; confirm or change:* plan upgrades and downgrades are **billing**; closing an account is **account**; an email covering several topics gets the category of the main thing the customer needs resolved.
+
+## Prompt loader (`prompts.py`)
+
+**Unknown fields are rejected (`extra="forbid"`)** (instead of Pydantic's default of ignoring them)
+A typo like `temprature: 0.7` would otherwise be dropped silently, and I'd believe I tested at 0.7 when I didn't. Cost: every new field must be added to `PromptConfig` before it can be used, which is the point.
+
+**No defaults: every field is required**
+The prompt file is the complete record of what ran. With defaults in code, the real config would be split between YAML and Python, and changing a default would quietly change how old prompt versions behave, breaking historical comparisons. Together with `extra="forbid"`, a typo produces two errors (one missing field, one unknown field), so the cause is obvious.
+
+**Few-shot expected outputs use the same `EmailClassification` schema as model answers**
+One source of truth for the output format. An example can never teach the model a format my own validator would reject; a bad example fails when the file loads, not as unexplained bad output later.
+
+**Defaults chosen by Claude:**
+- Any invalid file raises `PromptConfigError` with the file path in the message. In CI a run must fail loudly, not continue with a half-loaded config.
+- `temperature` must be 0–2 (OpenAI's range), and `version_id` must look like `v<number>`.
+- The config is frozen after loading, and `few_shot` is a tuple, because `frozen` only blocks reassigning fields and a list could still be appended to. Results stay tied to exactly the file they came from.
+- The loader takes a path; `prompt_path("v1")` resolves a version to `prompts/v1.yaml`.
+- pytest is a dev dependency. Each decision above has a test, so it's enforced in CI and not just documented.
