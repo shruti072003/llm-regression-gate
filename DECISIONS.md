@@ -70,3 +70,26 @@ One source of truth for the output format. An example can never teach the model 
 - The config is frozen after loading, and `few_shot` is a tuple, because `frozen` only blocks reassigning fields and a list could still be appended to. Results stay tied to exactly the file they came from.
 - The loader takes a path; `prompt_path("v1")` resolves a version to `prompts/v1.yaml`.
 - pytest is a dev dependency. Each decision above has a test, so it's enforced in CI and not just documented.
+
+## Classifier (`classifier.py`)
+
+**Structured outputs: the API enforces the `EmailClassification` schema** (instead of JSON mode or prompt instructions only)
+An eval should test what I'd actually ship, and in production I'd use structured outputs. Generation is constrained to the schema, so invalid JSON and made-up categories become nearly impossible, and parse failures don't add noise to accuracy. Pydantic still validates locally, as defense in depth.
+Implementation detail: `responses.parse()` raises an exception on invalid output and discards the response, losing the raw text and token counts. So I call `responses.create()` with a schema built from `EmailClassification.model_json_schema()` and validate it myself. The API and the validator enforce the same contract from one source.
+
+**`classify()` always returns a `ClassificationOutcome`, never raises** (instead of exceptions or `None`)
+One bad case can't crash an 80-case run, and every failure keeps its evidence for the diff report: raw output, error type and message, latency, tokens, attempts, served model.
+
+**API errors are infrastructure errors, kept out of quality metrics**
+`ErrorType` separates quality failures (`invalid_output`, `refusal`, `truncated`: the model gave a bad answer) from `api_error` (no answer to judge). An OpenAI outage during CI must not look like "accuracy dropped 15%" and block a good PR. If too many cases hit `api_error`, the run will be marked invalid instead of passing or failing (Step 5).
+
+**Defaults chosen by Claude:**
+- **Async from the start,** because the Step 3 runner sends requests concurrently.
+- **Own retry loop, SDK retries off:** up to 4 attempts for connection errors, timeouts, 429s and 5xx, with exponential backoff and jitter so parallel requests don't retry in lockstep. Non-transient errors (401 auth, 400 bad request) fail immediately, since retrying can't help. My own loop can record `attempts`, and `latency_ms` measures only the successful attempt, so retry waits don't pollute the latency metric.
+- **30-second timeout** (the SDK default read timeout is 600 s, so one stuck call could hold CI for 10 minutes).
+- **`max_output_tokens=200`** (a one-sentence answer is about 30 tokens). The cap limits cost; hitting it is recorded as `truncated`.
+- **Record `served_model`,** the snapshot that answered (`gpt-4.1-mini-2025-04-14`), not only the alias requested. If scores change with no prompt change, this shows whether the provider updated the model behind the alias.
+- **Record `category_normalized`** by comparing the raw category to the validated one. That's the format-compliance signal from the casing decision. With structured outputs it should almost always be false; if it isn't, that's worth investigating.
+- **The client is passed in,** not created inside `classify()`. One client is shared across the run, and tests substitute a fake one, so they run without network or cost.
+
+**Open question from the first real call:** the summary was 99 characters, right at the 100 limit. With structured outputs the API may enforce `maxLength` while generating, which could cut summaries mid-sentence while still passing validation. Check in Step 1.5 across several emails.
