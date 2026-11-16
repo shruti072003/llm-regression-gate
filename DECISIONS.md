@@ -30,3 +30,25 @@ The feature asks for a one-sentence summary. The minimum rejects empty or whites
 **Category casing and whitespace are normalized before validation** (instead of strict matching)
 The model returning "Billing" for a billing email understood it correctly; only the formatting is off. Strict validation would count that as a wrong answer, mixing "wrong category" with "wrong format" in one number. Because LLM output varies even at temperature 0, it could also make CI fail at random. A `mode="before"` validator lowercases and strips the value, so accuracy measures understanding.
 Trade-off: normalization hides formatting drift. To keep that signal, the classifier (Step 1.4) should record whether the raw value had to be normalized and report a separate format-compliance rate. Structured outputs in 1.4 should also prevent the problem at the API level; Pydantic stays as defense in depth.
+
+## Prompt files (`prompts/`)
+
+**Model and temperature live in the prompt file, next to the prompt text**
+The output depends on the prompt, the model and the parameters together, so they are versioned as one unit. Consequence: a model change is a prompt change. Swapping models means creating a new prompt version, and it goes through the same regression gate as a wording change. Nobody can swap the model in code without it being tested.
+
+**Versions are `v1`, `v2`, … (not semantic versioning like `1.0.0`)**
+Semver promises compatibility levels ("minor won't break you") that a prompt change can't guarantee; one changed word can move accuracy by 10%. The version only records order, and the eval results say how big a change was. Also avoids a YAML trap: unquoted `1.0` loads as a float.
+
+**`version_id` is in the file and must match the filename**
+The file describes itself even if moved, and the loader raises an error if `v2.yaml` says `version_id: v1`. That catches the copy-paste bug where every result gets stored under the wrong version.
+
+**`created_at` is a plain date, `temperature` is 0**
+A date is enough because versions are ordered by number, not time. Temperature 0 minimizes variation between runs so that differences point to the prompt, not randomness (Step 1.5 tests how deterministic it actually is).
+
+**v1 is zero-shot (`few_shot: []`)**
+v1 is the baseline. v2 adds examples, which makes it a controlled experiment where only one thing changes, and the gate measures exactly what few-shot gained. If v1 already scores very high, that's a finding too: examples may not be worth their token cost.
+Rule for later: few-shot emails must never appear in the golden dataset (data leakage inflates accuracy).
+
+**Labeling policy (the prompt and the golden dataset must follow the same rules)**
+- Login and password problems are **account** (the customer's access or identity). An error page shown during login is **technical** (the product is broken).
+- *Chosen by Claude as defaults; confirm or change:* plan upgrades and downgrades are **billing**; closing an account is **account**; an email covering several topics gets the category of the main thing the customer needs resolved.
