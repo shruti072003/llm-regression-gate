@@ -1,0 +1,27 @@
+# Golden dataset: human-written ground truth for the email classifier.
+#
+# Rules
+# - Write every email and label yourself. No LLM-generated emails or labels.
+# - Labels follow the labeling policy in DECISIONS.md. If unsure, decide the rule, write it there, then label.
+# - Never reuse an email from a prompt's few-shot examples or from scripts/smoke_test.py (tests enforce this).
+# - IDs are permanent: never renumber or reuse one. Remove a case by deleting it; its ID stays retired.
+# - Bump `version` whenever you add, remove or relabel a case.
+# - Aim for about 15 cases per category. Run `uv run python scripts/dataset_stats.py` to check the balance.
+#
+# Case format (copy this block, remove the leading "# "):
+#
+# - id: case-001
+#   email: |
+#     Hi,
+#     Write the email exactly as a customer would, over several lines if you like.
+#   expected_category: billing        # billing | technical | account | general
+#   key_facts:                        # 1-3 facts a correct summary must mention
+#     - first fact
+#   difficulty: easy                  # easy | medium | hard
+#   tags: []                          # ambiguous, policy_boundary, multi_topic, very_short,
+#                                     # typos, mixed_language, sarcasm
+#   notes: Why this case matters and why it has this label.   # required if hard or tagged
+
+version: 1
+description: Initial hand-written golden set.
+cases: []

@@ -107,3 +107,28 @@ One bad case can't crash an 80-case run, and every failure keeps its evidence fo
 
 **Changing classifier code changes outputs, just like changing a prompt**
 The length fix changed v1's results without touching `prompts/v1.yaml`. So the CI gate (Step 8) must run when the classifier or schema changes, not only when `prompts/` changes.
+
+## Golden dataset (`data/golden.yaml`, `dataset.py`)
+
+**Emails and labels are written by me, never by an LLM**
+The dataset is the ground truth everything is measured against. LLM-written cases would test the model on its own kind of writing and label errors would go unnoticed. Claude builds the tooling and reviews labels; the content is mine.
+
+**YAML** (the guide says JSON; I first chose JSON and switched)
+I'll hand-write about 60 multi-line emails and edit them repeatedly. In JSON every line break is `\n`, every quote is escaped, and comments are impossible, so malformed cases are easy to create and hard to spot. YAML lets me write emails as plain text and explain tricky labels in comments. The guide's reason for JSON, "git-friendly", applies equally to YAML. The loader validates every field, which covers YAML's type surprises. Lesson: "the guide says so" isn't a reason; the guide's reason has to apply to my situation.
+
+**Expected summary = 1–3 key facts, not one ideal sentence** (differs from the guide)
+The smoke test showed the same correct meaning can be worded many ways. A judge checking a short checklist ("charged twice", "wants a refund") gives more consistent scores than one rating similarity to a reference sentence, and facts are quicker to write.
+
+**Balanced: about 15 cases per category** (not a realistic traffic mix)
+With a realistic mix, `general` would get about 6 cases, and one flip would move its accuracy by 17 points. Balanced gives every category enough cases for its own accuracy to mean something. I have no real traffic to match anyway.
+
+**Difficulty level plus edge-case tags**
+`difficulty` (easy/medium/hard) plus a closed set of tags (`ambiguous`, `policy_boundary`, `multi_topic`, `very_short`, `typos`, `mixed_language`, `sarcasm`). The report can say "sarcasm accuracy dropped from 4/4 to 1/4" instead of only "hard cases dropped".
+
+**Defaults chosen by Claude:**
+- **Strict validation for my data, lenient for model output.** `expected_category: Billing` in my file is a typo and fails; the same value from the model is normalized and counted. Different sources call for different strictness.
+- **Neutral, permanent IDs** (`case-001`). An ID like `billing-001` would be misleading after a relabel. IDs are never renumbered or reused, since Step 5 compares runs case by case.
+- **One file with a `version` number,** plus a `content_hash` computed from the file bytes at load time (and rejected if written by hand). Bumping the version is for humans; the hash catches a forgotten bump.
+- **`notes` required only for hard or tagged cases.** Easy cases explain themselves; tricky ones need the reasoning written down.
+- **Duplicates rejected after normalizing** case and whitespace, so a reformatted copy still counts as a duplicate.
+- **Leakage is checked by tests on the real files,** not inside the loader. Tests compare the golden emails against every prompt's few-shot examples and the LLM-written smoke emails, so a leak fails CI. Keeping it out of the loader avoids making the dataset loader depend on prompts and scripts.
