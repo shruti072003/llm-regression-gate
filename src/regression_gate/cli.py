@@ -6,6 +6,7 @@ CI treats anything non-zero as a failed check, which blocks the merge.
 
 import argparse
 import asyncio
+import os
 import sys
 from pathlib import Path
 
@@ -29,7 +30,7 @@ EXIT_CODES = {Status.PASS: 0, Status.WARN: 0, Status.FAIL: 1, Status.INVALID: 2}
 def main(argv: list[str] | None = None) -> int:
     load_dotenv()
     parser = argparse.ArgumentParser(prog="gate", description="LLM regression gate")
-    parser.add_argument("--settings", type=Path, default=SETTINGS_PATH)
+    parser.add_argument("--settings", type=Path, default=Path(os.environ.get("GATE_SETTINGS", SETTINGS_PATH)))
     parser.add_argument("--db", type=Path, default=DB_PATH)
     sub = parser.add_subparsers(dest="command", required=True)
 
@@ -109,7 +110,7 @@ def _add_output_args(p: argparse.ArgumentParser) -> None:
     p.add_argument("--json", type=Path, help="write the comparison as JSON here")
     p.add_argument("--history", type=Path, help="history file for the trend chart (default: runs in the database)")
     p.add_argument("--report-url", help="link to the full report, used in the comment and Slack")
-    p.add_argument("--slack", action="store_true", help="send the result to Slack (needs SLACK_WEBHOOK_URL)")
+    p.add_argument("--slack", action="store_true", help="alert Slack on WARN, FAIL or INVALID (needs SLACK_WEBHOOK_URL)")
 
 
 async def _run(version: str, settings, store: Store, limit: int | None) -> RunRecord:
@@ -151,7 +152,8 @@ def _compare_and_report(baseline: RunRecord, candidate: RunRecord, settings, sto
         _write(args.comment, render_markdown(comparison, baseline, candidate, args.report_url))
     if args.json:
         _write(args.json, comparison.model_dump_json(indent=1))
-    if args.slack:
+    # Alert only when someone needs to act; a message on every green PR is noise people learn to ignore.
+    if args.slack and comparison.status is not Status.PASS:
         send(comparison_message(comparison, args.report_url))
     return EXIT_CODES[comparison.status]
 

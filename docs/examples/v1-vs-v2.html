@@ -1,0 +1,269 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PASS: v1 → v2 · LLM regression gate</title>
+<style>
+  :root {
+    --page: #f9f9f9; --surface: #ffffff; --ink: #191919; --ink-2: #666666; --rule: #e5e5e5;
+    --s1: #257de0; --s2: #f47230;
+    --good: #0aac23; --warning: #fbb315; --serious: #f18a59; --critical: #dc3c3d;
+    --good-ink: #006c10; --critical-ink: #b42324;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --page: #0b0b0b; --surface: #191919; --ink: #efefef; --ink-2: #9c9c9c; --rule: #383838;
+      --s1: #338ced; --s2: #e76624; --good-ink: #5fd36f; --critical-ink: #f08080;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--page); color: var(--ink);
+         font: 14px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+  main { max-width: 1100px; margin: 0 auto; padding: 24px; }
+  h1 { font-size: 22px; margin: 0 0 4px; }
+  h2 { font-size: 16px; margin: 32px 0 12px; }
+  .muted { color: var(--ink-2); }
+  .card { background: var(--surface); border: 1px solid var(--rule); border-radius: 8px; padding: 16px; }
+  .badge { display: inline-flex; gap: 6px; align-items: center; padding: 4px 10px; border-radius: 999px;
+           font-weight: 600; border: 2px solid; }
+  .badge.pass { border-color: var(--good); } .badge.warn { border-color: var(--warning); }
+  .badge.fail { border-color: var(--critical); } .badge.invalid { border-color: var(--serious); }
+  .tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; }
+  .tile .k { color: var(--ink-2); font-size: 12px; }
+  .tile .v { font-size: 22px; font-weight: 600; }
+  .tile .d { font-size: 12px; }
+  .up { color: var(--good-ink); } .down { color: var(--critical-ink); }
+  table { width: 100%; border-collapse: collapse; background: var(--surface); }
+  table.diffs { table-layout: fixed; }
+  table.diffs col.case { width: 14%; } table.diffs col.expected { width: 10%; }
+  table.diffs col.output { width: 38%; }
+  th, td { text-align: left; padding: 8px; border-bottom: 1px solid var(--rule); vertical-align: top; }
+  th { color: var(--ink-2); font-weight: 600; font-size: 12px; }
+  td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+  .pair { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .pair > div { padding: 8px; border-radius: 6px; border: 1px solid var(--rule); }
+  .tag { display: inline-block; font-size: 11px; padding: 0 6px; border: 1px solid var(--rule);
+         border-radius: 4px; margin: 0 4px 2px 0; color: var(--ink-2); }
+  details summary { cursor: pointer; color: var(--ink-2); margin-top: 8px; }
+  pre.email { white-space: pre-wrap; margin: 6px 0 0; font: 12px/1.4 ui-monospace, monospace; color: var(--ink-2); }
+  ul.reasons { margin: 8px 0 0; padding-left: 20px; }
+  .chart { position: relative; }
+  .chart svg { display: block; width: 100%; height: auto; }
+  .chart .grid line { stroke: var(--rule); stroke-width: 1; }
+  .chart .grid text, .chart .label { fill: var(--ink-2); font-size: 11px; }
+  .chart .label.value { fill: var(--ink); font-weight: 600; }
+  .chart path { fill: none; stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
+  .chart .s1 { stroke: var(--s1); } .chart .s2 { stroke: var(--s2); }
+  .chart circle { stroke: var(--surface); stroke-width: 2; }
+  .chart circle.s1 { fill: var(--s1); } .chart circle.s2 { fill: var(--s2); }
+  .chart .crosshair { stroke: var(--ink-2); stroke-width: 1; stroke-dasharray: 3 3; visibility: hidden; }
+  .legend { display: flex; gap: 16px; margin-bottom: 8px; color: var(--ink-2); font-size: 12px; }
+  .legend i { display: inline-block; width: 12px; height: 3px; border-radius: 2px; vertical-align: middle; margin-right: 6px; }
+  .tooltip { position: absolute; pointer-events: none; background: var(--surface); border: 1px solid var(--rule);
+             border-radius: 6px; padding: 8px 10px; font-size: 12px; box-shadow: 0 2px 8px rgba(0,0,0,.12);
+             visibility: hidden; white-space: nowrap; }
+</style>
+</head>
+<body>
+<main>
+  <p class="muted">LLM regression gate · 2026-11-27 05:21 UTC</p>
+  <h1><span class="badge pass">✅ PASS</span>
+      &nbsp;v1 → v2</h1>
+  <p class="muted">
+    Baseline <code>20261127T051439Z-v1-d0d638</code> (d805e08f2c6e) ·
+    Candidate <code>20261127T051657Z-v2-4d2aa3</code> (d805e08f2c6e)<br>
+    Classifier gpt-4.1-mini (served gpt-4.1-mini-2025-04-14, temperature 0.0) ·
+    Judge gpt-4.1/j1 ·
+    Dataset v1 (c57c4fe71724)
+  </p>
+
+  <div class="card">
+    <ul class="reasons muted">
+<li>60 of 60 golden cases are LLM-drafted and not yet human-reviewed.</li>    </ul>
+  </div>
+
+  <h2>Scorecard</h2>
+  <div class="tiles">
+        <div class="card tile"><div class="k">Accuracy</div><div class="v">100.0%</div>
+<div class="d up">+5.0 pts vs 95.0%</div></div>
+
+        <div class="card tile"><div class="k">Summary score</div><div class="v">99.2%</div>
+<div class="d up">+2.8 pts vs 96.4%</div></div>
+
+        <div class="card tile"><div class="k">Regressions</div><div class="v">0</div>
+<div class="d muted">3 improved</div></div>
+
+        <div class="card tile"><div class="k">Flip significance</div><div class="v">p = 0.250</div>
+<div class="d muted">McNemar exact test</div></div>
+
+        <div class="card tile"><div class="k">Latency p95</div><div class="v">1,405 ms</div>
+<div class="d muted">baseline 1,342 ms</div></div>
+
+        <div class="card tile"><div class="k">Run cost</div><div class="v">$0.0693</div>
+<div class="d muted">27013 classifier tokens</div></div>
+
+        <div class="card tile"><div class="k">API errors</div><div class="v">0.0%</div>
+<div class="d muted">baseline 0.0%</div></div>
+
+        <div class="card tile"><div class="k">Format fixes</div><div class="v">0.0%</div>
+<div class="d muted">invalid output 0.0%</div></div>
+
+  </div>
+
+  <h2>Trend over the last 5 runs</h2>
+  <div class="card chart" id="trend">
+    <div class="legend"><span><i style="background: var(--s1)"></i>Accuracy</span><span><i style="background: var(--s2)"></i>Summary score</span></div>
+    <svg viewBox="0 0 720 240" role="img" aria-label="Accuracy and summary score per run">
+      <g class="grid">
+        <line x1="44" x2="550" y1="200" y2="200"></line>
+        <text x="36" y="204" text-anchor="end">0%</text>
+        <line x1="44" x2="550" y1="154.0" y2="154.0"></line>
+        <text x="36" y="158.0" text-anchor="end">25%</text>
+        <line x1="44" x2="550" y1="108.0" y2="108.0"></line>
+        <text x="36" y="112.0" text-anchor="end">50%</text>
+        <line x1="44" x2="550" y1="62.0" y2="62.0"></line>
+        <text x="36" y="66.0" text-anchor="end">75%</text>
+        <line x1="44" x2="550" y1="16.0" y2="16.0"></line>
+        <text x="36" y="20.0" text-anchor="end">100%</text>
+      </g>
+      <line class="crosshair" y1="16" y2="200"></line>
+      <path class="s1" d="M44.0,22.1 L170.5,25.2 L297.0,16.0 L423.5,16.0 L550.0,19.1"></path>
+<circle class="s1" cx="44.0" cy="22.133333333333333" r="4"></circle><circle class="s1" cx="170.5" cy="25.20000000000001" r="4"></circle><circle class="s1" cx="297.0" cy="16.0" r="4"></circle><circle class="s1" cx="423.5" cy="16.0" r="4"></circle><circle class="s1" cx="550.0" cy="19.066666666666677" r="4"></circle>      <text class="label" x="560" y="23.066666666666677">Accuracy <tspan class="label value">98.3%</tspan></text>
+      <path class="s2" d="M44.0,30.3 L170.5,22.6 L297.0,17.5 L423.5,19.1 L550.0,69.2"></path>
+<circle class="s2" cx="44.0" cy="30.311111111111103" r="4"></circle><circle class="s2" cx="170.5" cy="22.644444444444442" r="4"></circle><circle class="s2" cx="297.0" cy="17.533333333333328" r="4"></circle><circle class="s2" cx="423.5" cy="19.066666666666677" r="4"></circle><circle class="s2" cx="550.0" cy="69.15555555555555" r="4"></circle>      <text class="label" x="560" y="73.15555555555555">Summary score <tspan class="label value">71.1%</tspan></text>
+<text class="label" x="44.0" y="218" text-anchor="middle">v1</text><text class="label" x="170.5" y="218" text-anchor="middle">v1</text><text class="label" x="297.0" y="218" text-anchor="middle">v2</text><text class="label" x="423.5" y="218" text-anchor="middle">v3</text><text class="label" x="550.0" y="218" text-anchor="middle">v4</text>      <rect class="hit" x="34" y="16" width="526"
+            height="184" fill="transparent"></rect>
+    </svg>
+    <div class="tooltip"></div>
+    <details><summary>Show as table</summary>
+      <table><tr><th>Run</th><th>Date</th><th>Prompt</th><th class="num">Accuracy</th><th class="num">Summary score</th></tr>
+<tr><td><code>20261127T051352Z-v1-c18648</code></td><td>2026-11-27 05:13</td><td>v1</td>
+        <td class="num">96.7%</td><td class="num">92.2%</td></tr><tr><td><code>20261127T051439Z-v1-d0d638</code></td><td>2026-11-27 05:14</td><td>v1</td>
+        <td class="num">95.0%</td><td class="num">96.4%</td></tr><tr><td><code>20261127T051657Z-v2-4d2aa3</code></td><td>2026-11-27 05:16</td><td>v2</td>
+        <td class="num">100.0%</td><td class="num">99.2%</td></tr><tr><td><code>20261127T051712Z-v3-bce1cc</code></td><td>2026-11-27 05:17</td><td>v3</td>
+        <td class="num">100.0%</td><td class="num">98.3%</td></tr><tr><td><code>20261127T051745Z-v4-cad581</code></td><td>2026-11-27 05:17</td><td>v4</td>
+        <td class="num">98.3%</td><td class="num">71.1%</td></tr>      </table>
+    </details>
+  </div>
+
+  <h2>Regressed cases (0)</h2>
+  <p class="muted">No case flipped from correct to wrong.</p>
+
+  <h2>Improved cases (3)</h2>
+    <table class="diffs">
+    <colgroup><col class="case"><col class="expected"><col class="output"><col class="output"></colgroup>
+    <tr><th>Case</th><th>Expected</th><th>Baseline output</th><th>Candidate output</th></tr>
+    <tr>
+      <td><code>case-022</code><br><span class="tag">policy_boundary</span><span class="tag">unreviewed</span></td>
+      <td>technical</td>
+      <td><strong>billing</strong> · summary 100.0%<br>
+          <span class="muted">The customer upgraded to the Team plan and paid the invoice, but the account still shows the Free plan and limits member invitations.</span></td>
+      <td><strong>technical</strong> · summary 100.0%<br>
+          <span class="muted">The customer upgraded to the Team plan but the admin settings still show the Free plan and limit invitations to 5 members.</span></td>
+    </tr>
+    <tr><td colspan="4" style="padding-top:0"><details><summary>Email</summary><pre class="email">Hi, our company upgraded to the Team plan yesterday (invoice #INV-20931, already paid), but
+the admin settings still show the Free plan and I can&#39;t invite more than 5 members.
+</pre></details></td></tr>
+    <tr>
+      <td><code>case-051</code><br><span class="tag">policy_boundary</span><span class="tag">unreviewed</span></td>
+      <td>general</td>
+      <td><strong>billing</strong> · summary 100.0%<br>
+          <span class="muted">The customer is inquiring about the availability of an education discount for Planwise.</span></td>
+      <td><strong>general</strong> · summary 100.0%<br>
+          <span class="muted">The customer is inquiring about the availability of an education discount for Planwise.</span></td>
+    </tr>
+    <tr><td colspan="4" style="padding-top:0"><details><summary>Email</summary><pre class="email">I&#39;m a teacher looking at Planwise for my students&#39; group projects. Do you offer an
+education discount?
+</pre></details></td></tr>
+    <tr>
+      <td><code>case-060</code><br><span class="tag">policy_boundary</span><span class="tag">unreviewed</span></td>
+      <td>general</td>
+      <td><strong>billing</strong> · summary 100.0%<br>
+          <span class="muted">The customer wants to know the yearly cost of the Team plan for 25 people.</span></td>
+      <td><strong>general</strong> · summary 100.0%<br>
+          <span class="muted">The customer wants to know the yearly cost of the Team plan for 25 people while currently on the free plan.</span></td>
+    </tr>
+    <tr><td colspan="4" style="padding-top:0"><details><summary>Email</summary><pre class="email">Hey! How much would the Team plan cost for 25 people if we pay yearly? We&#39;re on the free
+plan right now.
+</pre></details></td></tr>
+  </table>
+
+
+  <h2>Summary drops (0)</h2>
+  <p class="muted">No summary lost half or more of its key facts.</p>
+
+  <h2>Accuracy by category</h2>
+    <table>
+    <tr><th>Category</th><th class="num">Cases</th><th class="num">Baseline</th><th class="num">Candidate</th><th class="num">Change</th></tr>
+    <tr><td>account</td><td class="num">15</td><td class="num">100.0%</td><td class="num">100.0%</td>
+        <td class="num muted">+0.0 pts</td></tr>
+    <tr><td>billing</td><td class="num">15</td><td class="num">100.0%</td><td class="num">100.0%</td>
+        <td class="num muted">+0.0 pts</td></tr>
+    <tr><td>general</td><td class="num">15</td><td class="num">86.7%</td><td class="num">100.0%</td>
+        <td class="num up">+13.3 pts</td></tr>
+    <tr><td>technical</td><td class="num">15</td><td class="num">93.3%</td><td class="num">100.0%</td>
+        <td class="num up">+6.7 pts</td></tr>
+  </table>
+
+
+  <h2>Accuracy by edge-case tag</h2>
+    <table>
+    <tr><th>Tag</th><th class="num">Cases</th><th class="num">Baseline</th><th class="num">Candidate</th><th class="num">Change</th></tr>
+    <tr><td>ambiguous</td><td class="num">4</td><td class="num">100.0%</td><td class="num">100.0%</td>
+        <td class="num muted">+0.0 pts</td></tr>
+    <tr><td>mixed_language</td><td class="num">4</td><td class="num">100.0%</td><td class="num">100.0%</td>
+        <td class="num muted">+0.0 pts</td></tr>
+    <tr><td>multi_topic</td><td class="num">5</td><td class="num">100.0%</td><td class="num">100.0%</td>
+        <td class="num muted">+0.0 pts</td></tr>
+    <tr><td>policy_boundary</td><td class="num">10</td><td class="num">70.0%</td><td class="num">100.0%</td>
+        <td class="num up">+30.0 pts</td></tr>
+    <tr><td>sarcasm</td><td class="num">4</td><td class="num">100.0%</td><td class="num">100.0%</td>
+        <td class="num muted">+0.0 pts</td></tr>
+    <tr><td>typos</td><td class="num">6</td><td class="num">100.0%</td><td class="num">100.0%</td>
+        <td class="num muted">+0.0 pts</td></tr>
+    <tr><td>very_short</td><td class="num">4</td><td class="num">100.0%</td><td class="num">100.0%</td>
+        <td class="num muted">+0.0 pts</td></tr>
+  </table>
+
+
+  <h2>Run details</h2>
+  <table>
+    <tr><th></th><th>Baseline</th><th>Candidate</th></tr>
+    <tr><td>Prompt</td><td>v1 (763672870956)</td><td>v2 (64f1f8bd1ec7)</td></tr>
+    <tr><td>Served model</td><td>gpt-4.1-mini-2025-04-14</td><td>gpt-4.1-mini-2025-04-14</td></tr>
+    <tr><td>Dataset</td><td>v1 (c57c4fe71724)</td><td>v1 (c57c4fe71724)</td></tr>
+    <tr><td>Judge</td><td>gpt-4.1/j1</td><td>gpt-4.1/j1</td></tr>
+    <tr><td>Latency p50 / p95</td><td>867 ms / 1,342 ms</td><td>881 ms / 1,405 ms</td></tr>
+    <tr><td>Tokens in / out</td><td>17372 / 1874</td><td>25172 / 1841</td></tr>
+    <tr><td>Classifier / judge cost</td><td>$0.0099 / $0.0389</td><td>$0.0130 / $0.0563</td></tr>
+    <tr><td>Unsupported claims</td><td>0.0%</td><td>0.0%</td></tr>
+    <tr><td>Duration</td><td>11.6 s</td><td>13.8 s</td></tr>
+  </table>
+</main>
+<script>
+  (function () {
+    const runs = [{"accuracy": 0.9666666666666667, "date": "2026-11-27 05:13", "prompt": "v1", "run_id": "20261127T051352Z-v1-c18648", "summary": 0.9222222222222223, "x": 44.0}, {"accuracy": 0.95, "date": "2026-11-27 05:14", "prompt": "v1", "run_id": "20261127T051439Z-v1-d0d638", "summary": 0.9638888888888889, "x": 170.5}, {"accuracy": 1.0, "date": "2026-11-27 05:16", "prompt": "v2", "run_id": "20261127T051657Z-v2-4d2aa3", "summary": 0.9916666666666667, "x": 297.0}, {"accuracy": 1.0, "date": "2026-11-27 05:17", "prompt": "v3", "run_id": "20261127T051712Z-v3-bce1cc", "summary": 0.9833333333333333, "x": 423.5}, {"accuracy": 0.9833333333333333, "date": "2026-11-27 05:17", "prompt": "v4", "run_id": "20261127T051745Z-v4-cad581", "summary": 0.7111111111111111, "x": 550.0}];
+    const box = document.getElementById("trend");
+    const svg = box.querySelector("svg"), tip = box.querySelector(".tooltip"), cross = svg.querySelector(".crosshair");
+    const pct = v => v === null ? "n/a" : (v * 100).toFixed(1) + "%";
+    function nearest(evt) {
+      const pt = svg.createSVGPoint(); pt.x = evt.clientX; pt.y = evt.clientY;
+      const x = pt.matrixTransform(svg.getScreenCTM().inverse()).x;
+      return runs.reduce((best, r) => Math.abs(r.x - x) < Math.abs(best.x - x) ? r : best, runs[0]);
+    }
+    svg.addEventListener("mousemove", evt => {
+      const r = nearest(evt);
+      cross.setAttribute("x1", r.x); cross.setAttribute("x2", r.x); cross.style.visibility = "visible";
+      tip.textContent = "";
+      [["", r.date + " · " + r.prompt], ["Accuracy ", pct(r.accuracy)], ["Summary score ", pct(r.summary)], ["", r.run_id]]
+        .forEach(([k, v]) => { const d = document.createElement("div"); d.textContent = k + v; tip.appendChild(d); });
+      const rect = box.getBoundingClientRect(), scale = svg.getBoundingClientRect().width / 720;
+      tip.style.left = Math.min(r.x * scale + 24, rect.width - 220) + "px";
+      tip.style.top = "40px"; tip.style.visibility = "visible";
+    });
+    svg.addEventListener("mouseleave", () => { tip.style.visibility = "hidden"; cross.style.visibility = "hidden"; });
+  })();
+</script>
+</body>
+</html>

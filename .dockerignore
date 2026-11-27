@@ -1,0 +1,6 @@
+.git
+.venv
+.env
+results
+GUIDE.md
+**/__pycache__

@@ -1,0 +1,31 @@
+# Unit tests and the Docker build. No API calls, no secrets: runs on every push and PR.
+name: tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  pytest:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+      - run: uv sync --frozen
+      - run: uv run pytest -q
+
+  docker:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: docker build -t llm-regression-gate .
+      - name: Smoke-test the image
+        run: |
+          docker run --rm llm-regression-gate --help
+          docker run --rm llm-regression-gate runs

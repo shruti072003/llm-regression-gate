@@ -211,3 +211,21 @@ Per-run checks compare two runs; a model updated behind an alias can lose 1 poin
 - **Few-shot examples weren't worth their tokens** here, so v2 stays the candidate for production rather than v3.
 - **v4 would have shipped if the gate only checked accuracy** (−1.7 points, within noise). It was caught because summaries are scored separately.
 - **Caveat:** v2 reaches 100%, which is a ceiling. The golden set was drafted together with the rules v2 encodes, so v2 is partly fitted to it. Next steps: human review of all labels, harder cases from real failures, and a held-out split that prompt iterations never look at.
+
+## CI, packaging and docs (Steps 8–9)
+
+**Three workflows:** unit tests and a Docker build on every push and PR (no secrets, no cost); the eval gate on PRs that touch `prompts/`, `src/`, `data/`, `gate.yaml` or dependencies; and a nightly drift run. The BASWE guide triggers only on `prompts/`, but Step 1.5 showed that code changes alter outputs too, and so do dataset, settings and dependency changes.
+
+**The baseline is re-run in the PR job,** from a second checkout of main, instead of reusing a stored result. Both runs hit the same served model snapshot at the same time and share one judge cache, so a provider-side change or judge noise can't appear as the PR's regression. Costs one extra run (about $0.05–0.10 per PR).
+
+**One sticky PR comment,** found by its hidden marker and updated on each push, plus the full report and run JSON as an artifact and the summary in the job summary.
+
+**The check fails on FAIL and INVALID, passes on WARN.** Warnings are visible in the comment but don't block; INVALID blocks because nothing was verified, and a rerun fixes it.
+
+**Slack only on WARN, FAIL, INVALID or drift.** A message on every green PR is noise people learn to ignore.
+
+**Nightly run commits a one-line summary to `results/history.jsonl`** (the only committed results file) and caches the SQLite judge cache between nights, so unchanged summaries aren't re-judged. A detected drift fails the job, which also notifies the repository owner by email even without Slack.
+
+**Docker image** with dependencies installed in a separate layer from code, so editing prompts doesn't reinstall packages. Configured through environment variables (`OPENAI_API_KEY`, `SLACK_WEBHOOK_URL`, `GATE_SETTINGS` for custom thresholds). Built and smoke-tested in CI rather than locally.
+
+**Example reports are committed under `docs/examples/`** so the README can show output without running anything.

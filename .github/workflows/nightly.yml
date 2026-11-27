@@ -1,0 +1,53 @@
+# Nightly run of the production prompt, appended to results/history.jsonl, then a slow-drift
+# check. Catches degradation with no code change, such as the provider updating the model
+# behind an alias. The job fails (and alerts Slack, if configured) when drift is detected.
+name: nightly drift check
+
+on:
+  schedule:
+    - cron: "17 6 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: nightly-drift
+
+jobs:
+  drift:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+      SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+      RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+      - run: uv sync --frozen
+
+      # Reuse yesterday's judge cache: unchanged summaries get the same verdict at no cost.
+      - uses: actions/cache@v4
+        with:
+          path: results/gate.db
+          key: gate-db-${{ github.run_id }}
+          restore-keys: gate-db-
+
+      - name: Run the production prompt
+        run: uv run gate run --out out/nightly.json
+
+      - name: Record in history
+        run: |
+          uv run gate record out/nightly.json
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add results/history.jsonl
+          git commit -m "Record nightly eval run"
+          git pull --rebase
+          git push
+
+      - name: Check for slow drift
+        run: uv run gate drift --slack --report-url "$RUN_URL"
