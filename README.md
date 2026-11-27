@@ -39,7 +39,7 @@ v4 is the interesting one. Its accuracy drop (−1.7 points, one case) is within
 
 Example reports: [v1 → v2](docs/examples/v1-vs-v2.html) and [v2 → v4](docs/examples/v2-vs-v4.html) (download and open in a browser).
 
-**Caveat:** the 60 golden cases were drafted by an LLM and are marked `reviewed: false` until a person checks each label. v2 reaching 100% is a ceiling: the rules it encodes were written alongside the dataset. See [Limitations](#limitations).
+**Caveat:** the 60 golden cases were drafted by an LLM and then human-reviewed against the written labeling policy. v2 reaching 100% is a ceiling: the rules it encodes were written alongside the dataset. See [Limitations](#limitations). The example reports were generated before the review, so they still list the cases as unreviewed.
 
 ## Setup
 
@@ -48,7 +48,7 @@ Requires Python 3.12 and [uv](https://docs.astral.sh/uv/).
 ```sh
 uv sync
 echo 'OPENAI_API_KEY=sk-...' > .env      # never committed
-uv run pytest                            # 84 tests, no API calls
+uv run pytest                            # 87 tests, no API calls
 ```
 
 A full run of 60 cases costs about $0.05–0.10 (classifier plus judge) at the prices in `gate.yaml`.
@@ -160,7 +160,7 @@ results/history.jsonl    nightly run history (everything else in results/ is loc
 
 ## Limitations
 
-- **The golden set is LLM-drafted and unreviewed.** Results are provisional until every case is `reviewed: true`.
+- **The golden set is LLM-drafted.** Every label was human-reviewed against the policy, but the emails were written by a model, which can make them cleaner than real customer email.
 - **It's small.** 60 cases means 1.7 points per case; fine for catching big regressions, not for telling 97% from 98%.
 - **v2 is partly fitted to the dataset.** The labeling rules were written while drafting the cases. A held-out split that prompt iterations never look at would give an honest estimate.
 - **One run per prompt.** Boundary cases can flip between identical runs. Running each case several times and voting would reduce noise at a proportional cost.

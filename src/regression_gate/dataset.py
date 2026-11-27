@@ -1,6 +1,7 @@
 """Load and validate the human-written golden dataset (data/golden.yaml)."""
 
 import hashlib
+import json
 import re
 from enum import StrEnum
 from pathlib import Path
@@ -80,7 +81,7 @@ class GoldenDataset(BaseModel):
     version: int = Field(ge=1)
     description: str = Field(min_length=1)
     cases: tuple[GoldenCase, ...]
-    # Set by load_dataset from the file bytes, not written in the file.
+    # Set by load_dataset, not written in the file. See scoring_hash.
     content_hash: str = ""
 
     @model_validator(mode="after")
@@ -102,11 +103,17 @@ def normalize_email(text: str) -> str:
     return re.sub(r"\s+", " ", text).strip().lower()
 
 
+def scoring_hash(cases: tuple[GoldenCase, ...]) -> str:
+    """Hash of only what affects scores: IDs, emails, labels and key facts. Review flags,
+    notes, tags, difficulty and comments can change without making old runs incomparable."""
+    payload = [[c.id, c.email, c.expected_category.value, list(c.key_facts)] for c in cases]
+    return hashlib.sha256(json.dumps(payload).encode()).hexdigest()[:12]
+
+
 def load_dataset(path: Path = GOLDEN_PATH) -> GoldenDataset:
     path = Path(path)
     try:
-        raw_bytes = path.read_bytes()
-        raw = yaml.safe_load(raw_bytes)
+        raw = yaml.safe_load(path.read_bytes())
     except OSError as e:
         raise DatasetError(f"{path}: cannot read file ({e})") from e
     except yaml.YAMLError as e:
@@ -118,9 +125,10 @@ def load_dataset(path: Path = GOLDEN_PATH) -> GoldenDataset:
         raise DatasetError(f"{path}: content_hash is computed, not written in the file")
 
     try:
-        return GoldenDataset.model_validate({**raw, "content_hash": hashlib.sha256(raw_bytes).hexdigest()[:12]})
+        dataset = GoldenDataset.model_validate(raw)
     except ValidationError as e:
         raise DatasetError(f"{path}: {e}") from e
+    return dataset.model_copy(update={"content_hash": scoring_hash(dataset.cases)})
 
 
 def find_leaks(dataset: GoldenDataset, other_emails: dict[str, str]) -> list[str]:

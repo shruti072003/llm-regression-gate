@@ -119,8 +119,8 @@ The length fix changed v1's results without touching `prompts/v1.yaml`. So the C
 
 ## Golden dataset (`data/golden.yaml`, `dataset.py`)
 
-**The 60 cases were drafted by Claude and are marked `reviewed: false`** *(revised in Step 2; the original decision was that I write every case)*
-Original reasoning still holds: the dataset is the ground truth, LLM-written cases test the model on its own kind of writing, and label errors go unnoticed. I changed course to finish the pipeline end to end, so the honest fix is provenance tracking: every case has a required `reviewed` flag, all 60 start as `false`, and the stats script and reports show how many are human-reviewed. Before trusting a result, I review each label against the policy and set `reviewed: true`. In an interview: "LLM-drafted, human-verified", and only once that review is done.
+**The 60 cases were drafted by Claude, then human-reviewed** *(revised twice; the original decision was that I write every case)*
+Original reasoning still holds: the dataset is the ground truth, LLM-written cases test the model on its own kind of writing, and label errors go unnoticed. I changed course to finish the pipeline end to end, so provenance is tracked: every case has a required `reviewed` flag, new cases start as `false`, and reports show how many are unreviewed. On 2026-11-27 I reviewed all 60 labels against the labeling policy, changed none, and set them to `reviewed: true`. In an interview: "LLM-drafted, human-reviewed against a written labeling policy."
 
 **YAML** (the guide says JSON; I first chose JSON and switched)
 I'll hand-write about 60 multi-line emails and edit them repeatedly. In JSON every line break is `\n`, every quote is escaped, and comments are impossible, so malformed cases are easy to create and hard to spot. YAML lets me write emails as plain text and explain tricky labels in comments. The guide's reason for JSON, "git-friendly", applies equally to YAML. The loader validates every field, which covers YAML's type surprises. Lesson: "the guide says so" isn't a reason; the guide's reason has to apply to my situation.
@@ -137,7 +137,8 @@ With a realistic mix, `general` would get about 6 cases, and one flip would move
 **Defaults chosen by Claude:**
 - **Strict validation for my data, lenient for model output.** `expected_category: Billing` in my file is a typo and fails; the same value from the model is normalized and counted. Different sources call for different strictness.
 - **Neutral, permanent IDs** (`case-001`). An ID like `billing-001` would be misleading after a relabel. IDs are never renumbered or reused, since Step 5 compares runs case by case.
-- **One file with a `version` number,** plus a `content_hash` computed from the file bytes at load time (and rejected if written by hand). Bumping the version is for humans; the hash catches a forgotten bump.
+- **One file with a `version` number,** plus a `content_hash` computed at load time (and rejected if written by hand). Bumping the version is for humans; the hash catches a forgotten bump.
+- **The hash covers only what affects scores** (IDs, emails, labels, key facts) *(revised when marking cases reviewed)*. It originally hashed the whole file, so flipping 60 `reviewed` flags would have flagged "dataset changed" in every comparison and reset drift history, with no change to scoring. Notes, tags, difficulty, review flags and comments can now change freely. (The first nightly history entry still has an old whole-file hash, so drift starts counting from the next run.)
 - **`notes` required only for hard or tagged cases.** Easy cases explain themselves; tricky ones need the reasoning written down.
 - **Duplicates rejected after normalizing** case and whitespace, so a reformatted copy still counts as a duplicate.
 - **Leakage is checked by tests on the real files,** not inside the loader. Tests compare the golden emails against every prompt's few-shot examples and the LLM-written smoke emails, so a leak fails CI. Keeping it out of the loader avoids making the dataset loader depend on prompts and scripts.
@@ -210,7 +211,7 @@ Per-run checks compare two runs; a model updated behind an alias can lose 1 poin
 - **v1 flipped `case-051` between two identical runs** (general, then billing) at temperature 0. Boundary cases are close to 50/50 for the model. This is why one flip isn't a regression.
 - **Few-shot examples weren't worth their tokens** here, so v2 stays the candidate for production rather than v3.
 - **v4 would have shipped if the gate only checked accuracy** (−1.7 points, within noise). It was caught because summaries are scored separately.
-- **Caveat:** v2 reaches 100%, which is a ceiling. The golden set was drafted together with the rules v2 encodes, so v2 is partly fitted to it. Next steps: human review of all labels, harder cases from real failures, and a held-out split that prompt iterations never look at.
+- **Caveat:** v2 reaches 100%, which is a ceiling. The golden set was drafted together with the rules v2 encodes, so v2 is partly fitted to it. Next steps: harder cases from real failures, and a held-out split that prompt iterations never look at. (All labels have since been human-reviewed, with no changes.)
 
 ## CI, packaging and docs (Steps 8–9)
 

@@ -1,8 +1,8 @@
 # Golden dataset: ground truth for the email classifier.
 #
 # Provenance: the 60 cases below were drafted by Claude (an LLM) following the labeling
-# policy in DECISIONS.md, and are marked `reviewed: false`. A human must check each label
-# and set `reviewed: true` before results on that case are fully trusted.
+# policy in DECISIONS.md, then reviewed by a human (Shruti Tewaney) against that policy on
+# 2026-11-27 and marked `reviewed: true`. New cases start as `reviewed: false` until checked.
 #
 # Rules
 # - Labels follow the labeling policy in DECISIONS.md. If unsure, decide the rule, write it there, then label.
@@ -30,7 +30,7 @@
 #   reviewed: false                   # true once a human has checked the label
 
 version: 1
-description: Initial golden set of 60 cases (15 per category), drafted by Claude, pending human review.
+description: Initial golden set of 60 cases (15 per category), drafted by Claude, human-reviewed.
 cases:
 
   # ---------------------------------------------------------------- billing
@@ -50,7 +50,7 @@ cases:
       - wants the duplicate refunded
     difficulty: easy
     tags: []
-    reviewed: false
+    reviewed: true
 
   - id: case-002
     email: |
@@ -62,7 +62,7 @@ cases:
       - for last quarter
     difficulty: easy
     tags: []
-    reviewed: false
+    reviewed: true
 
   - id: case-003
     email: |
@@ -73,7 +73,7 @@ cases:
       - wants to update payment card
     difficulty: easy
     tags: []
-    reviewed: false
+    reviewed: true
 
   - id: case-004
     email: |
@@ -85,7 +85,7 @@ cases:
       - at end of billing period
     difficulty: easy
     tags: []
-    reviewed: false
+    reviewed: true
 
   - id: case-005
     email: |
@@ -105,7 +105,7 @@ cases:
     difficulty: medium
     tags: []
     notes: The request comes after a long backstory, so the model has to find it.
-    reviewed: false
+    reviewed: true
 
   - id: case-006
     email: |
@@ -117,7 +117,7 @@ cases:
     difficulty: medium
     tags: [very_short, typos]
     notes: Very short with no punctuation; the classifier gets almost no context.
-    reviewed: false
+    reviewed: true
 
   - id: case-007
     email: |
@@ -132,7 +132,7 @@ cases:
     notes: >
       Sarcastic; the literal words praise the product. The real issue is being overbilled
       for seats, which is billing.
-    reviewed: false
+    reviewed: true
 
   - id: case-008
     email: |
@@ -145,7 +145,7 @@ cases:
     difficulty: medium
     tags: [mixed_language]
     notes: Spanish then English; the request is understandable from either half.
-    reviewed: false
+    reviewed: true
 
   - id: case-009
     email: |
@@ -162,7 +162,7 @@ cases:
     notes: >
       Looks like "features missing", but unlike "paid but not delivered" the payment failed,
       so the locked features are expected. The thing to resolve is the payment: billing.
-    reviewed: false
+    reviewed: true
 
   - id: case-010
     email: |
@@ -177,7 +177,7 @@ cases:
     notes: >
       Cancelling a paid subscription while keeping the account is billing. Closing the
       account itself would be account (see case-042).
-    reviewed: false
+    reviewed: true
 
   - id: case-011
     email: |
@@ -189,7 +189,7 @@ cases:
       - wants a refund
     difficulty: easy
     tags: []
-    reviewed: false
+    reviewed: true
 
   - id: case-012
     email: |
@@ -202,7 +202,7 @@ cases:
     difficulty: medium
     tags: [typos]
     notes: Typos and a mention of "account", which could pull the model toward the account category.
-    reviewed: false
+    reviewed: true
 
   - id: case-013
     email: |
@@ -214,7 +214,7 @@ cases:
       - organization is tax-exempt
     difficulty: easy
     tags: []
-    reviewed: false
+    reviewed: true
 
   - id: case-014
     email: |
@@ -229,7 +229,7 @@ cases:
     notes: >
       Mentions a discount, but this is an existing customer's invoice, which is billing.
       Contrast with pre-purchase discount questions, which are general (case-051).
-    reviewed: false
+    reviewed: true
 
   - id: case-015
     email: |
@@ -239,7 +239,7 @@ cases:
       - needs receipt for last payment
     difficulty: easy
     tags: []
-    reviewed: false
+    reviewed: true
 
   # -------------------------------------------------------------- technical
 
@@ -252,7 +252,7 @@ cases:
       - Gantt view won't load
     difficulty: easy
     tags: []
-    reviewed: false
+    reviewed: true
 
   - id: case-017
     email: |
@@ -264,7 +264,7 @@ cases:
       - started after recent update
     difficulty: easy
     tags: []
-    reviewed: false
+    reviewed: true
 
   - id: case-018
     email: |
@@ -275,7 +275,7 @@ cases:
       - CSV export missing due dates
     difficulty: easy
     tags: []
-    reviewed: false
+    reviewed: true
 
   - id: case-019
     email: |
@@ -293,7 +293,7 @@ cases:
     difficulty: medium
     tags: []
     notes: The cause is a user action (renaming), but the integration not working is still technical.
-    reviewed: false
+    reviewed: true
 
   - id: case-020
     email: |
@@ -304,7 +304,7 @@ cases:
       - dashboard loads very slowly
     difficulty: easy
     tags: []
-    reviewed: false
+    reviewed: true
 
   - id: case-021
     email: |
@@ -319,7 +319,7 @@ cases:
       About login, which is usually account, but the customer's credentials are fine and the
       product shows an error page. Policy: an error page during login is technical.
       Contrast with case-037.
-    reviewed: false
+    reviewed: true
 
   - id: case-022
     email: |
@@ -334,7 +334,7 @@ cases:
     notes: >
       Policy "paid but not delivered is technical": the payment went through, the product
       didn't apply the plan. Mentions an invoice, which pulls toward billing.
-    reviewed: false
+    reviewed: true
 
   - id: case-023
     email: |
@@ -345,7 +345,7 @@ cases:
     difficulty: medium
     tags: [very_short, typos]
     notes: Three words, no detail about platform or error.
-    reviewed: false
+    reviewed: true
 
   - id: case-024
     email: |
@@ -358,7 +358,7 @@ cases:
     difficulty: medium
     tags: [sarcasm]
     notes: Sarcastic praise; the actual content is a data-loss bug.
-    reviewed: false
+    reviewed: true
 
   - id: case-025
     email: |
@@ -372,7 +372,7 @@ cases:
     notes: >
       German then English. Notification emails are a product feature, so technical; a
       password-reset or verification email not arriving would be account.
-    reviewed: false
+    reviewed: true
 
   - id: case-026
     email: |
@@ -388,7 +388,7 @@ cases:
     notes: >
       Two requests. The main thing to resolve is the broken sync; the refund depends on it.
       A reader could reasonably pick billing.
-    reviewed: false
+    reviewed: true
 
   - id: case-027
     email: |
@@ -400,7 +400,7 @@ cases:
       - plan allows 100 MB
     difficulty: easy
     tags: []
-    reviewed: false
+    reviewed: true
 
   - id: case-028
     email: |
@@ -411,7 +411,7 @@ cases:
     difficulty: medium
     tags: [typos]
     notes: Typos in key words ("teh", "dosent").
-    reviewed: false
+    reviewed: true
 
   - id: case-029
     email: |
@@ -423,7 +423,7 @@ cases:
       - since last night's release
     difficulty: easy
     tags: []
-    reviewed: false
+    reviewed: true
 
   - id: case-030
     email: |
@@ -439,7 +439,7 @@ cases:
       Could be read as account (access). Policy: account is access to your own account and
       identity; content shared inside the product not showing up is the product not working,
       so technical.
-    reviewed: false
+    reviewed: true
 
   # ---------------------------------------------------------------- account
 
@@ -452,7 +452,7 @@ cases:
       - wants to change account email address
     difficulty: easy
     tags: []
-    reviewed: false
+    reviewed: true
 
   - id: case-032
     email: |
@@ -464,7 +464,7 @@ cases:
       - wants it unlocked
     difficulty: easy
     tags: []
-    reviewed: false
+    reviewed: true
 
   - id: case-033
     email: |
@@ -476,7 +476,7 @@ cases:
       - can't log in
     difficulty: easy
     tags: []
-    reviewed: false
+    reviewed: true
 
   - id: case-034
     email: |
@@ -488,7 +488,7 @@ cases:
       - wants personal data erased
     difficulty: easy
     tags: []
-    reviewed: false
+    reviewed: true
 
   - id: case-035
     email: |
@@ -507,7 +507,7 @@ cases:
     difficulty: medium
     tags: []
     notes: Workspace roles and ownership are part of account access and identity.
-    reviewed: false
+    reviewed: true
 
   - id: case-036
     email: |
@@ -518,7 +518,7 @@ cases:
     difficulty: medium
     tags: [very_short]
     notes: Abbreviation "pw"; almost no context.
-    reviewed: false
+    reviewed: true
 
   - id: case-037
     email: |
@@ -533,7 +533,7 @@ cases:
     notes: >
       Contrast with case-021: here the product is rejecting the customer's credentials, with no
       error page. Credential problems are account.
-    reviewed: false
+    reviewed: true
 
   - id: case-038
     email: |
@@ -547,7 +547,7 @@ cases:
     notes: >
       Sarcastic. Repeated verification could be a bug (technical), but email verification is
       identity, so account. A reader could reasonably pick technical.
-    reviewed: false
+    reviewed: true
 
   - id: case-039
     email: |
@@ -559,7 +559,7 @@ cases:
     difficulty: medium
     tags: [mixed_language]
     notes: French then English; profile details are account.
-    reviewed: false
+    reviewed: true
 
   - id: case-040
     email: |
@@ -572,7 +572,7 @@ cases:
     difficulty: medium
     tags: [typos]
     notes: Lowercase with typos.
-    reviewed: false
+    reviewed: true
 
   - id: case-041
     email: |
@@ -583,7 +583,7 @@ cases:
       - wants to add a second admin
     difficulty: easy
     tags: []
-    reviewed: false
+    reviewed: true
 
   - id: case-042
     email: |
@@ -598,7 +598,7 @@ cases:
     notes: >
       Main request is closing the account (account); the billing question follows from it.
       Contrast with case-010, which cancels only the subscription.
-    reviewed: false
+    reviewed: true
 
   - id: case-043
     email: |
@@ -610,7 +610,7 @@ cases:
       - worried account is compromised
     difficulty: easy
     tags: []
-    reviewed: false
+    reviewed: true
 
   - id: case-044
     email: |
@@ -624,7 +624,7 @@ cases:
     notes: >
       Phrased as a how-to question, which could look general, but 2FA is explicitly account
       in the policy.
-    reviewed: false
+    reviewed: true
 
   - id: case-045
     email: |
@@ -635,7 +635,7 @@ cases:
       - doesn't remember signup email
     difficulty: easy
     tags: []
-    reviewed: false
+    reviewed: true
 
   # ---------------------------------------------------------------- general
 
@@ -647,7 +647,7 @@ cases:
       - asks about offline mode
     difficulty: easy
     tags: []
-    reviewed: false
+    reviewed: true
 
   - id: case-047
     email: |
@@ -657,7 +657,7 @@ cases:
       - requests dark mode
     difficulty: easy
     tags: []
-    reviewed: false
+    reviewed: true
 
   - id: case-048
     email: |
@@ -668,7 +668,7 @@ cases:
       - asks about a reseller or partner program
     difficulty: easy
     tags: []
-    reviewed: false
+    reviewed: true
 
   - id: case-049
     email: |
@@ -679,7 +679,7 @@ cases:
       - positive feedback about the timeline view
     difficulty: easy
     tags: []
-    reviewed: false
+    reviewed: true
 
   - id: case-050
     email: |
@@ -692,7 +692,7 @@ cases:
     difficulty: medium
     tags: []
     notes: Mentions GDPR like case-034, but asks for information rather than acting on an account.
-    reviewed: false
+    reviewed: true
 
   - id: case-051
     email: |
@@ -706,7 +706,7 @@ cases:
     notes: >
       A pricing question before buying is a sales inquiry: general. Billing covers money on an
       existing subscription (case-014).
-    reviewed: false
+    reviewed: true
 
   - id: case-052
     email: |
@@ -717,7 +717,7 @@ cases:
     difficulty: easy
     tags: [very_short]
     notes: Five words; easy once you know product questions are general.
-    reviewed: false
+    reviewed: true
 
   - id: case-053
     email: |
@@ -729,7 +729,7 @@ cases:
     difficulty: medium
     tags: [sarcasm]
     notes: Sarcastic, but it's a feature question, not a bug.
-    reviewed: false
+    reviewed: true
 
   - id: case-054
     email: |
@@ -741,7 +741,7 @@ cases:
     difficulty: medium
     tags: [mixed_language]
     notes: Portuguese then English.
-    reviewed: false
+    reviewed: true
 
   - id: case-055
     email: |
@@ -752,7 +752,7 @@ cases:
     difficulty: easy
     tags: [typos]
     notes: Typos in a simple product question.
-    reviewed: false
+    reviewed: true
 
   - id: case-056
     email: |
@@ -767,7 +767,7 @@ cases:
     notes: >
       Sounds like a problem, but nothing is broken: the button works and was moved on purpose.
       Feedback about design is general. A reader could reasonably pick technical.
-    reviewed: false
+    reviewed: true
 
   - id: case-057
     email: |
@@ -780,7 +780,7 @@ cases:
     difficulty: medium
     tags: [multi_topic]
     notes: Two questions, both informational, so the category is the same either way.
-    reviewed: false
+    reviewed: true
 
   - id: case-058
     email: |
@@ -790,7 +790,7 @@ cases:
       - asks about job openings
     difficulty: easy
     tags: []
-    reviewed: false
+    reviewed: true
 
   - id: case-059
     email: |
@@ -804,7 +804,7 @@ cases:
     difficulty: medium
     tags: [multi_topic]
     notes: Mentions SSO, but it's a pre-sales request for a demo, not an account or login problem.
-    reviewed: false
+    reviewed: true
 
   - id: case-060
     email: |
@@ -819,4 +819,4 @@ cases:
     notes: >
       An existing free user asking a price before buying: a sales inquiry, so general.
       v1's prompt lists "prices" under billing, so v1 is expected to get this wrong.
-    reviewed: false
+    reviewed: true

@@ -42,6 +42,13 @@ def test_content_hash_changes_when_file_changes(tmp_path):
     assert first != second
 
 
+@pytest.mark.parametrize("overrides", [{"reviewed": False}, {"notes": "Added later."}, {"difficulty": "medium"}])
+def test_content_hash_ignores_fields_that_dont_affect_scores(tmp_path, overrides):
+    first = load_dataset(write_dataset(tmp_path, [case()])).content_hash
+    second = load_dataset(write_dataset(tmp_path, [case(**overrides)])).content_hash
+    assert first == second
+
+
 def test_content_hash_cannot_be_written_by_hand(tmp_path):
     with pytest.raises(DatasetError, match="computed"):
         load_dataset(write_dataset(tmp_path, [case()], content_hash="abc"))
