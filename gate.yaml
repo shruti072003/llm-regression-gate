@@ -2,7 +2,7 @@
 # or tolerates, so it is reviewed like code and triggers the eval in CI.
 
 # The prompt version in production. A PR that changes it is evaluated against main's version.
-active_prompt: v2
+active_prompt: v4
 dataset: data/golden.yaml
 
 # Parallel API requests per run.
