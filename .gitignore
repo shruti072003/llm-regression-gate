@@ -1,6 +1,5 @@
 .env
 /.venv
 __pycache__/
-# Local run database and artifacts; results/history.jsonl is committed by the nightly job
-results/*
-!results/history.jsonl
+# Local run database and artifacts. Nightly history lives on the eval-history branch.
+results/

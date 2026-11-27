@@ -5,17 +5,13 @@
 # Running the baseline fresh in the same job (instead of reusing an old result) means both
 # runs hit the same served model snapshot and share one judge cache, so a provider-side
 # model change or judge noise can't show up as a regression in the PR.
+#
+# `gate` is a required check on main, so it runs on every PR. PRs that change nothing that
+# can affect model behavior pass in seconds without calling the API.
 name: eval gate
 
 on:
   pull_request:
-    paths:
-      - "prompts/**"
-      - "src/**"
-      - "data/**"
-      - "gate.yaml"
-      - "pyproject.toml"
-      - "uv.lock"
 
 permissions:
   contents: read
@@ -34,7 +30,25 @@ jobs:
       SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
       RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
     steps:
+      - name: Check whether the PR can change model behavior
+        id: changes
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR: ${{ github.event.pull_request.number }}
+          REPO: ${{ github.repository }}
+        run: |
+          files=$(gh api "repos/$REPO/pulls/$PR/files" --paginate --jq '.[].filename')
+          relevant=$(echo "$files" | grep -E '^(prompts/|src/|data/|gate\.yaml$|pyproject\.toml$|uv\.lock$)' || true)
+          if [ -n "$relevant" ]; then
+            echo "relevant=true" >> "$GITHUB_OUTPUT"
+            printf 'Model-affecting changes:\n%s\n' "$relevant"
+          else
+            echo "relevant=false" >> "$GITHUB_OUTPUT"
+            echo "No prompt, code, data, settings or dependency changes: eval skipped." | tee -a "$GITHUB_STEP_SUMMARY"
+          fi
+
       - name: Require the API key
+        if: steps.changes.outputs.relevant == 'true'
         run: |
           if [ -z "$OPENAI_API_KEY" ]; then
             echo "::error::OPENAI_API_KEY secret is not set (PRs from forks don't get secrets)."
@@ -42,33 +56,39 @@ jobs:
           fi
 
       - name: Check out the PR (candidate)
+        if: steps.changes.outputs.relevant == 'true'
         uses: actions/checkout@v4
         with:
           path: head
 
       - name: Check out main (baseline)
+        if: steps.changes.outputs.relevant == 'true'
         uses: actions/checkout@v4
         with:
           ref: ${{ github.event.pull_request.base.sha }}
           path: base
 
       - uses: astral-sh/setup-uv@v6
+        if: steps.changes.outputs.relevant == 'true'
         with:
           enable-cache: true
 
       - name: Run baseline
+        if: steps.changes.outputs.relevant == 'true'
         working-directory: base
         run: |
           uv sync --frozen
           uv run gate --db "$GITHUB_WORKSPACE/gate.db" run --out "$GITHUB_WORKSPACE/out/baseline.json"
 
       - name: Run candidate
+        if: steps.changes.outputs.relevant == 'true'
         working-directory: head
         run: |
           uv sync --frozen
           uv run gate --db "$GITHUB_WORKSPACE/gate.db" run --out "$GITHUB_WORKSPACE/out/candidate.json"
 
       - name: Compare
+        if: steps.changes.outputs.relevant == 'true'
         id: compare
         working-directory: head
         run: |
@@ -83,7 +103,7 @@ jobs:
           cat "$GITHUB_WORKSPACE/out/comment.md" >> "$GITHUB_STEP_SUMMARY"
 
       - name: Upload report
-        if: always()
+        if: always() && steps.changes.outputs.relevant == 'true'
         uses: actions/upload-artifact@v4
         with:
           name: regression-report
@@ -106,7 +126,7 @@ jobs:
           fi
 
       - name: Block merge on FAIL or INVALID
-        if: steps.compare.outputs.exit_code != '0'
+        if: steps.changes.outputs.relevant == 'true' && steps.compare.outputs.exit_code != '0'
         run: |
           echo "::error::Regression gate result is FAIL or INVALID (exit ${{ steps.compare.outputs.exit_code }}). See the PR comment and the regression-report artifact."
           exit 1

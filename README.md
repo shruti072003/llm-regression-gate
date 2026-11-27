@@ -117,10 +117,12 @@ With 60 cases one flip is 1.7 points. A single case flipped between two identica
 | Workflow | When | What |
 |---|---|---|
 | [tests.yml](.github/workflows/tests.yml) | every push and PR | unit tests, Docker build and smoke test; no API calls |
-| [eval-gate.yml](.github/workflows/eval-gate.yml) | PRs touching prompts, code, data or settings | baseline vs candidate, PR comment, report artifact, fails on FAIL/INVALID |
-| [nightly.yml](.github/workflows/nightly.yml) | daily 06:17 UTC, or manually | runs the production prompt, appends to `results/history.jsonl`, checks slow drift |
+| [eval-gate.yml](.github/workflows/eval-gate.yml) | every PR (passes in seconds if nothing model-affecting changed) | baseline vs candidate, PR comment, report artifact, fails on FAIL/INVALID |
+| [nightly.yml](.github/workflows/nightly.yml) | daily 06:17 UTC, or manually | runs the production prompt, appends to `results/history.jsonl` on the [`eval-history`](../../tree/eval-history) branch, checks slow drift |
 
-Secrets: `OPENAI_API_KEY` (required), `SLACK_WEBHOOK_URL` (optional; without it alerts are printed in the job log). To make a FAIL actually block merging, require the `eval gate / gate` check in a branch protection rule for `main`.
+Secrets: `OPENAI_API_KEY` (required), `SLACK_WEBHOOK_URL` (optional; without it alerts are printed in the job log).
+
+`main` is protected: a PR can merge only when `gate`, `pytest` and `docker` pass and the branch is up to date with `main`. Up to date matters here because the gate's baseline is main at the time it ran; if main's prompt changed since, the comparison is stale.
 
 ## Architecture decisions
 
@@ -155,7 +157,7 @@ src/regression_gate/
   storage.py             SQLite runs and judge cache
   cli.py                 the `gate` command
 scripts/                 smoke test, dataset stats
-results/history.jsonl    nightly run history (everything else in results/ is local)
+results/                local run database and reports (not committed)
 ```
 
 ## Limitations

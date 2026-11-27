@@ -236,3 +236,11 @@ Per-run checks compare two runs; a model updated behind an alias can lose 1 poin
 - **PR #1, v1 → v2: PASS.** Accuracy 91.7% → 100%, 5 improvements, 0 regressions, McNemar p = 0.062.
 - **PR #2, v2 → v4 (stacked on #1): FAIL,** summary score −28.1 points; the check fails on the PR.
 - **v1 scored 91.7% in CI but 95.0% and 96.7% in two local runs** (same prompt, same dataset): 3–5 misses depending on the run, all on boundary cases. Run-to-run variation is larger than a single run suggests, which confirms two decisions: re-running the baseline in the same job rather than reusing a stored score, and thresholds wider than one or two flips. Running each case several times and voting is the next improvement if this noise starts to matter.
+
+## Branch protection (after the demo)
+
+**`main` requires `gate`, `pytest` and `docker` to pass, and the PR branch to be up to date.** Without it, a FAIL was visible but didn't block anything. "Up to date" matters more than usual: the gate's baseline is main at the time it ran, so if main's prompt changed since, the comparison is stale and must rerun. Admins can still push directly (`enforce_admins` off), since this is a one-person repo.
+
+**The gate now runs on every PR, and passes in seconds when nothing model-affecting changed.** A required check filtered by `paths:` would never start on a docs-only PR, which would block it forever. The job lists the PR's files and skips the eval (no API cost) unless prompts, code, data, settings or dependencies changed.
+
+**Nightly history moved to an `eval-history` branch.** A protected branch rejects the bot's pushes, and a daily data commit on main was noise anyway. The nightly job checks out main for code and the data branch for history.
