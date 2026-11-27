@@ -229,3 +229,9 @@ Per-run checks compare two runs; a model updated behind an alias can lose 1 poin
 **Docker image** with dependencies installed in a separate layer from code, so editing prompts doesn't reinstall packages. Configured through environment variables (`OPENAI_API_KEY`, `SLACK_WEBHOOK_URL`, `GATE_SETTINGS` for custom thresholds). Built and smoke-tested in CI rather than locally.
 
 **Example reports are committed under `docs/examples/`** so the README can show output without running anything.
+
+## Verified on GitHub (Step 10)
+
+- **PR #1, v1 → v2: PASS.** Accuracy 91.7% → 100%, 5 improvements, 0 regressions, McNemar p = 0.062.
+- **PR #2, v2 → v4 (stacked on #1): FAIL,** summary score −28.1 points; the check fails on the PR.
+- **v1 scored 91.7% in CI but 95.0% and 96.7% in two local runs** (same prompt, same dataset): 3–5 misses depending on the run, all on boundary cases. Run-to-run variation is larger than a single run suggests, which confirms two decisions: re-running the baseline in the same job rather than reusing a stored score, and thresholds wider than one or two flips. Running each case several times and voting is the next improvement if this noise starts to matter.
