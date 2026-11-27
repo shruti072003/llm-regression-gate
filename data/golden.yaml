@@ -185,8 +185,8 @@ cases:
       Your terms mention a 14-day refund window. Can I get the $480 back?
     expected_category: billing
     key_facts:
-      - cancelled annual plan after two days
-      - wants $480 refunded
+      - cancelled annual plan shortly after paying
+      - wants a refund
     difficulty: easy
     tags: []
     reviewed: false
@@ -313,7 +313,6 @@ cases:
     expected_category: technical
     key_facts:
       - Google sign-in shows an error page
-      - password login still works
     difficulty: hard
     tags: [policy_boundary]
     notes: >
@@ -367,8 +366,7 @@ cases:
       Could you check what's wrong? Danke!
     expected_category: technical
     key_facts:
-      - email notifications stopped
-      - since Monday
+      - email notifications for assigned tasks stopped
     difficulty: medium
     tags: [mixed_language]
     notes: >
@@ -462,7 +460,7 @@ cases:
       Can you unlock it? I have a deadline today.
     expected_category: account
     key_facts:
-      - account locked after failed logins
+      - account is locked
       - wants it unlocked
     difficulty: easy
     tags: []
@@ -801,8 +799,8 @@ cases:
       could someone show us how SSO with Okta works?
     expected_category: general
     key_facts:
-      - considering moving 200 people
-      - asks about onboarding and an SSO demo
+      - asks about onboarding a large company
+      - asks for an SSO demo
     difficulty: medium
     tags: [multi_topic]
     notes: Mentions SSO, but it's a pre-sales request for a demo, not an account or login problem.

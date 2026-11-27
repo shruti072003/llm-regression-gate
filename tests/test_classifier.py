@@ -6,7 +6,7 @@ import httpx2 as httpx  # the HTTP library openai depends on
 import pytest
 from openai import APITimeoutError, AuthenticationError, RateLimitError
 
-from regression_gate import classifier
+from regression_gate import classifier, llm
 from regression_gate.classifier import ErrorType, build_input, classify
 from regression_gate.prompts import PromptConfig
 
@@ -56,7 +56,7 @@ def no_backoff_sleep(monkeypatch):
     async def instant(_seconds):
         pass
 
-    monkeypatch.setattr(classifier.asyncio, "sleep", instant)
+    monkeypatch.setattr(llm.asyncio, "sleep", instant)
 
 
 def run(client):

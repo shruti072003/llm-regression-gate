@@ -1,0 +1,40 @@
+# Settings for the regression gate. Changing this file changes what the gate measures
+# or tolerates, so it is reviewed like code and triggers the eval in CI.
+
+# The prompt version in production. A PR that changes it is evaluated against main's version.
+active_prompt: v1
+dataset: data/golden.yaml
+
+# Parallel API requests per run.
+concurrency: 8
+
+judge:
+  # Stronger than the classifier model, so it can catch summaries the classifier gets wrong.
+  model: gpt-4.1
+  temperature: 0
+
+thresholds:
+  # Overall accuracy drop vs. the baseline. With 60 cases, one flip is about 1.7 points.
+  accuracy_warn_drop: 0.03
+  accuracy_critical_drop: 0.08
+  # Per-category accuracy drop. With 15 cases per category, one flip is about 6.7 points.
+  category_warn_drop: 0.10
+  category_critical_drop: 0.20
+  # Mean summary score (fraction of key facts covered) drop.
+  summary_warn_drop: 0.05
+  summary_critical_drop: 0.10
+  # Above this share of API errors in either run, the comparison is INVALID instead of PASS/FAIL.
+  max_infra_error_rate: 0.10
+
+drift:
+  # Slow drift: the moving average of the last `window` runs vs. the `window` runs before it.
+  window: 7
+  accuracy_warn_drop: 0.03
+  summary_warn_drop: 0.05
+
+# USD per 1M tokens. Launch prices for the GPT-4.1 family; verify at
+# https://developers.openai.com/api/docs/pricing before relying on cost numbers.
+# Served snapshots (e.g. gpt-4.1-mini-2025-04-14) are matched by the longest prefix.
+pricing:
+  gpt-4.1-mini: {input: 0.40, output: 1.60}
+  gpt-4.1: {input: 2.00, output: 8.00}

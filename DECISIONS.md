@@ -141,3 +141,73 @@ With a realistic mix, `general` would get about 6 cases, and one flip would move
 - **`notes` required only for hard or tagged cases.** Easy cases explain themselves; tricky ones need the reasoning written down.
 - **Duplicates rejected after normalizing** case and whitespace, so a reformatted copy still counts as a duplicate.
 - **Leakage is checked by tests on the real files,** not inside the loader. Tests compare the golden emails against every prompt's few-shot examples and the LLM-written smoke emails, so a leak fails CI. Keeping it out of the loader avoids making the dataset loader depend on prompts and scripts.
+
+*Key facts revised after the first v1 run (Step 3):* five facts were details a one-sentence summary may reasonably leave out ("since Monday", "$480", "200 people", "password login still works", "after failed logins"). That breaks the written rule (facts are the problem and the request), so I fixed them before freezing the baseline. Done after seeing model output, which is exactly when to be careful: each change was checked against the rule, not against what the model wrote. Facts the model missed that do matter (the refund request in case-026, "invoice shows full price" in case-014) stayed.
+
+## Runner, scoring and storage (Steps 3–4)
+
+**Settings in `gate.yaml`:** thresholds, judge model, concurrency and pricing live in one validated file (unknown keys rejected, like prompts). Changing it changes what the gate tolerates, so it's reviewed like code and triggers the CI eval.
+
+**Concurrency with a semaphore (8 requests at a time):** a 60-case run takes about 15 s instead of a minute, without hitting rate limits. Combined with jittered retries from Step 1.4.
+
+**A case "passes" on category alone; summaries are a separate score**
+Category correctness is binary and stable (no flips in 30 smoke runs on clear emails). Summary quality is graded and judged by an LLM, so it's noisier. Mixing them into one pass/fail would let judge noise flip cases. Each gets its own metric and thresholds.
+
+**LLM judge: `gpt-4.1`, temperature 0, checks each key fact plus "unsupported claim"**
+- Stronger than the classifier (`gpt-4.1-mini`), so it can catch what the classifier gets wrong. `gpt-5` models were rejected: they're reasoning models with no temperature setting and spent the whole 16-token test budget thinking.
+- Checklist scoring (fraction of key facts covered) rather than "rate similarity 1–5": more consistent, and the reasoning says which fact was missed.
+- The output schema puts `reasoning` before the verdicts, so the model reasons before committing.
+- Verified on four hand-made summaries (good, missing fact, invented detail, truncated): all scored correctly.
+- `JUDGE_VERSION` (`j1`) is recorded on every run. Scores from different judge versions aren't comparable, and the comparison refuses to compare them.
+
+**Judge verdicts are cached** by (judge version, model, email, facts, summary)
+An identical summary always gets the identical verdict, so judge noise can't create a fake summary regression between two runs that wrote the same summary. It also halves the cost of a rerun. In CI both runs share one database, so they share the cache.
+
+**Quality failures score 0, API errors are excluded:** an invalid output or refusal is a wrong category and a 0 summary. An API error has no answer to judge, so it's left out of both metrics and counted in `infra_error_rate`.
+
+**Storage: SQLite (`results/gate.db`, not committed) plus JSON run files.** SQLite is queryable locally; JSON files move between CI steps. Run summaries for drift go to `results/history.jsonl`, the one results file that is committed.
+
+**Every run records what could change its results:** prompt version and file hash, model and served snapshot, dataset version and content hash, judge model and version, git commit.
+
+**Shared OpenAI plumbing (`llm.py`):** retries and structured-output schemas are used by both the classifier and the judge, so they live in one module.
+
+## Comparison (Step 5, `compare.py`)
+
+**Paired comparison on cases evaluated in both runs:** each case is compared with itself. Cases added to or removed from the dataset are listed but don't count; API-error cases are excluded.
+
+**Status rules** (thresholds in `gate.yaml`):
+- **INVALID** if either run has more than 10% API errors: results aren't trustworthy, rerun. This is a failed check, so an outage can neither pass a bad prompt nor be mistaken for a regression.
+- **FAIL** if accuracy drops more than 8 points, any category more than 20, or the summary score more than 10.
+- **WARN** at 3 / 10 / 5 points. Warnings don't block merging.
+- **Per-category thresholds** catch a category collapsing while overall accuracy barely moves (4 wrong general cases = −26.7 for general, only −6.7 overall).
+- With 60 cases one flip is 1.7 points, below the warning level: one flip is noise, as the runs below show.
+
+**McNemar exact test on flipped cases (informational):** if a change made no difference, each flipped case is equally likely to flip either way. A small p-value means the imbalance is unlikely to be noise. It's shown, not used to gate, because with this few flips it rarely reaches significance; the thresholds are the rule.
+
+**Changes that make results incomparable are surfaced:** different dataset hash (compare shared cases only), different judge version (summary scores not compared), different served model snapshot (noted, because it can explain a change with no prompt change).
+
+## Reports and alerts (Steps 6–7)
+
+**HTML report** (`report.py`, Jinja2 with auto-escaping because emails and model output are untrusted text): status with icon and reasons, scorecard, trend chart, regressed / improved / summary-drop cases with old and new output side by side, per-category and per-tag tables, run details. The chart follows the dataviz palette: validated blue/orange pair, direct labels plus a table view because orange is under 3:1 contrast on white, hover tooltips, a dark mode.
+
+**PR comment in Markdown** with a hidden marker (`<!-- regression-gate-report -->`), so CI updates one comment instead of adding a new one per push.
+
+**Slack is optional:** alerts go out only when `SLACK_WEBHOOK_URL` is set; otherwise the message is printed. Nothing else depends on Slack.
+
+**Slow drift is tracked separately from per-run regressions**
+Per-run checks compare two runs; a model updated behind an alias can lose 1 point a week and never cross the 3-point warning. Drift compares the average of the last 7 comparable runs with the 7 before (same prompt, dataset and judge; outage runs skipped) and warns above 3 points. It also reports served-model snapshot changes, the most likely cause. Fed by a nightly CI run.
+
+## Results (Step 10 demo, on the LLM-drafted golden set)
+
+| Prompt | Change | Accuracy | Summary score | Gate vs previous |
+|---|---|---:|---:|---|
+| v1 | zero-shot baseline | 95.0% | 96.4% | — |
+| v2 | + labeling rules | 100% | 99.2% | PASS, 3 improvements (case-022, 051, 060) |
+| v3 | + 4 few-shot examples | 100% | 98.3% | PASS, no gain, 33% higher cost per run |
+| v4 | 6-word summaries + keyword shortcut | 98.3% | 71.1% | **FAIL**: summary score −28.1 |
+
+- **v1's misses were exactly the predicted ones:** the two labeling rules its prompt didn't have.
+- **v1 flipped `case-051` between two identical runs** (general, then billing) at temperature 0. Boundary cases are close to 50/50 for the model. This is why one flip isn't a regression.
+- **Few-shot examples weren't worth their tokens** here, so v2 stays the candidate for production rather than v3.
+- **v4 would have shipped if the gate only checked accuracy** (−1.7 points, within noise). It was caught because summaries are scored separately.
+- **Caveat:** v2 reaches 100%, which is a ceiling. The golden set was drafted together with the rules v2 encodes, so v2 is partly fitted to it. Next steps: human review of all labels, harder cases from real failures, and a held-out split that prompt iterations never look at.

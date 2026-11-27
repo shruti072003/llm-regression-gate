@@ -5,11 +5,15 @@ description = "llm regression detector gate"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
+    "jinja2>=3.1.6",
     "openai>=3.42.0",
     "pydantic>=2.14.2",
     "python-dotenv>=1.2.4",
     "pyyaml>=6.0.3",
 ]
+
+[project.scripts]
+gate = "regression_gate.cli:main"
 
 [build-system]
 requires = ["uv_build>=0.13.6,<0.14"]
@@ -22,3 +26,8 @@ module-name = "regression_gate"
 dev = [
     "pytest>=9.2.0",
 ]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+# Lets tests import the shared helpers module.
+pythonpath = ["tests"]
