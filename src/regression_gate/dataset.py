@@ -48,6 +48,8 @@ class GoldenCase(BaseModel):
     difficulty: Difficulty
     tags: tuple[EdgeTag, ...]
     notes: str | None = None
+    # False until a human has checked the label. Cases drafted by an LLM start as False.
+    reviewed: bool
 
     @field_validator("key_facts")
     @classmethod

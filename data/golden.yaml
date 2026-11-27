@@ -1,19 +1,25 @@
-# Golden dataset: human-written ground truth for the email classifier.
+# Golden dataset: ground truth for the email classifier.
+#
+# Provenance: the 60 cases below were drafted by Claude (an LLM) following the labeling
+# policy in DECISIONS.md, and are marked `reviewed: false`. A human must check each label
+# and set `reviewed: true` before results on that case are fully trusted.
 #
 # Rules
-# - Write every email and label yourself. No LLM-generated emails or labels.
 # - Labels follow the labeling policy in DECISIONS.md. If unsure, decide the rule, write it there, then label.
 # - Never reuse an email from a prompt's few-shot examples or from scripts/smoke_test.py (tests enforce this).
 # - IDs are permanent: never renumber or reuse one. Remove a case by deleting it; its ID stays retired.
-# - Bump `version` whenever you add, remove or relabel a case.
+# - Bump `version` whenever you add, remove or relabel a case (after the first baseline run).
 # - Aim for about 15 cases per category. Run `uv run python scripts/dataset_stats.py` to check the balance.
 #
-# Case format (copy this block, remove the leading "# "):
+# Fictional product used throughout: Planwise, a project-management app with Free, Pro and
+# Team plans, a web dashboard, iOS and Android apps, Gantt and timeline views, CSV/PDF export,
+# Slack and Google Calendar integrations, Google/Okta SSO, and a public API.
+#
+# Case format:
 #
 # - id: case-001
 #   email: |
-#     Hi,
-#     Write the email exactly as a customer would, over several lines if you like.
+#     The email, exactly as a customer would write it.
 #   expected_category: billing        # billing | technical | account | general
 #   key_facts:                        # 1-3 facts a correct summary must mention
 #     - first fact
@@ -21,7 +27,798 @@
 #   tags: []                          # ambiguous, policy_boundary, multi_topic, very_short,
 #                                     # typos, mixed_language, sarcasm
 #   notes: Why this case matters and why it has this label.   # required if hard or tagged
+#   reviewed: false                   # true once a human has checked the label
 
 version: 1
-description: Initial hand-written golden set.
-cases: []
+description: Initial golden set of 60 cases (15 per category), drafted by Claude, pending human review.
+cases:
+
+  # ---------------------------------------------------------------- billing
+
+  - id: case-001
+    email: |
+      Hello,
+
+      I just looked at my card statement and Planwise charged me $12 twice on the 4th for my Pro plan.
+      I only have one subscription. Could you refund the extra charge?
+
+      Thanks,
+      Priya
+    expected_category: billing
+    key_facts:
+      - charged twice for Pro
+      - wants the duplicate refunded
+    difficulty: easy
+    tags: []
+    reviewed: false
+
+  - id: case-002
+    email: |
+      Hi team, our finance department needs invoices that include our company VAT number
+      (DE298114567). Can you reissue last quarter's invoices with it?
+    expected_category: billing
+    key_facts:
+      - needs invoices with VAT number
+      - for last quarter
+    difficulty: easy
+    tags: []
+    reviewed: false
+
+  - id: case-003
+    email: |
+      My credit card expires at the end of this month. Where do I put the new card so my
+      subscription doesn't lapse?
+    expected_category: billing
+    key_facts:
+      - wants to update payment card
+    difficulty: easy
+    tags: []
+    reviewed: false
+
+  - id: case-004
+    email: |
+      We've shrunk to a team of three, so we'd like to move from the Team plan back to Pro
+      when our current billing period ends. How do we do that?
+    expected_category: billing
+    key_facts:
+      - wants to downgrade from Team to Pro
+      - at end of billing period
+    difficulty: easy
+    tags: []
+    reviewed: false
+
+  - id: case-005
+    email: |
+      Hi there,
+
+      So I signed up for the 14 day trial a few weeks ago and when it ended I picked Pro. I was
+      pretty sure I clicked monthly, but yesterday I got charged $96, which looks like the annual
+      price. Honestly I'm not sure I'll use it for a whole year. Can you switch me to monthly
+      and refund the difference?
+
+      Best,
+      Tom
+    expected_category: billing
+    key_facts:
+      - charged annual price instead of monthly
+      - wants to switch to monthly and get the difference refunded
+    difficulty: medium
+    tags: []
+    notes: The request comes after a long backstory, so the model has to find it.
+    reviewed: false
+
+  - id: case-006
+    email: |
+      refund pls didnt mean to upgrade
+    expected_category: billing
+    key_facts:
+      - upgraded by accident
+      - wants a refund
+    difficulty: medium
+    tags: [very_short, typos]
+    notes: Very short with no punctuation; the classifier gets almost no context.
+    reviewed: false
+
+  - id: case-007
+    email: |
+      Love paying for 12 seats every month when our workspace has 8 people in it.
+      Really great business model you've got there.
+    expected_category: billing
+    key_facts:
+      - billed for 12 seats
+      - workspace has only 8 users
+    difficulty: hard
+    tags: [sarcasm]
+    notes: >
+      Sarcastic; the literal words praise the product. The real issue is being overbilled
+      for seats, which is billing.
+    reviewed: false
+
+  - id: case-008
+    email: |
+      Hola, me cobraron en dólares pero nuestra empresa está en España y necesitamos las facturas en euros.
+      Can you change our billing currency to EUR?
+    expected_category: billing
+    key_facts:
+      - charged in US dollars
+      - wants billing in euros
+    difficulty: medium
+    tags: [mixed_language]
+    notes: Spanish then English; the request is understandable from either half.
+    reviewed: false
+
+  - id: case-009
+    email: |
+      Our renewal payment was declined (new company card, the old one was cancelled) and now
+      all our Pro features are locked and the export button is greyed out. How do we get back
+      to Pro? We need the exports for a client meeting tomorrow.
+    expected_category: billing
+    key_facts:
+      - renewal payment declined
+      - Pro features locked
+      - wants to restore Pro
+    difficulty: hard
+    tags: [multi_topic, policy_boundary]
+    notes: >
+      Looks like "features missing", but unlike "paid but not delivered" the payment failed,
+      so the locked features are expected. The thing to resolve is the payment: billing.
+    reviewed: false
+
+  - id: case-010
+    email: |
+      Please cancel my Pro subscription so I'm not charged again. I'd like to keep my account
+      and my projects on the free plan though.
+    expected_category: billing
+    key_facts:
+      - wants to cancel Pro subscription
+      - keep account on free plan
+    difficulty: medium
+    tags: [policy_boundary]
+    notes: >
+      Cancelling a paid subscription while keeping the account is billing. Closing the
+      account itself would be account (see case-042).
+    reviewed: false
+
+  - id: case-011
+    email: |
+      I cancelled our annual plan two days after paying because the team went with another tool.
+      Your terms mention a 14-day refund window. Can I get the $480 back?
+    expected_category: billing
+    key_facts:
+      - cancelled annual plan after two days
+      - wants $480 refunded
+    difficulty: easy
+    tags: []
+    reviewed: false
+
+  - id: case-012
+    email: |
+      my bank statment shows 3 charges from planwise this month but i only have one acount??
+      what are these
+    expected_category: billing
+    key_facts:
+      - three charges this month
+      - only one account
+    difficulty: medium
+    tags: [typos]
+    notes: Typos and a mention of "account", which could pull the model toward the account category.
+    reviewed: false
+
+  - id: case-013
+    email: |
+      Hello, you charged us sales tax on our last invoice, but we are a tax-exempt nonprofit.
+      I've attached our exemption certificate. Please remove the tax and credit us the amount.
+    expected_category: billing
+    key_facts:
+      - charged sales tax
+      - organization is tax-exempt
+    difficulty: easy
+    tags: []
+    reviewed: false
+
+  - id: case-014
+    email: |
+      When we signed up, your sales rep Dana promised us 20% off for the first year.
+      This month's invoice shows the full price. Can you apply the discount and fix the invoice?
+    expected_category: billing
+    key_facts:
+      - promised 20% discount
+      - invoice shows full price
+    difficulty: medium
+    tags: []
+    notes: >
+      Mentions a discount, but this is an existing customer's invoice, which is billing.
+      Contrast with pre-purchase discount questions, which are general (case-051).
+    reviewed: false
+
+  - id: case-015
+    email: |
+      Could you send me a receipt for my last payment? I need it for my expense report.
+    expected_category: billing
+    key_facts:
+      - needs receipt for last payment
+    difficulty: easy
+    tags: []
+    reviewed: false
+
+  # -------------------------------------------------------------- technical
+
+  - id: case-016
+    email: |
+      Since this morning the Gantt view just shows a loading spinner forever. I've tried
+      Chrome and Firefox and cleared my cache. The list view works fine.
+    expected_category: technical
+    key_facts:
+      - Gantt view won't load
+    difficulty: easy
+    tags: []
+    reviewed: false
+
+  - id: case-017
+    email: |
+      The iOS app crashes as soon as I open any project. iPhone 15, latest app version.
+      It was fine until the update on Tuesday.
+    expected_category: technical
+    key_facts:
+      - iOS app crashes when opening a project
+      - started after recent update
+    difficulty: easy
+    tags: []
+    reviewed: false
+
+  - id: case-018
+    email: |
+      When I export my tasks to CSV, the due date column is missing. It used to be there.
+      I need it for my weekly report.
+    expected_category: technical
+    key_facts:
+      - CSV export missing due dates
+    difficulty: easy
+    tags: []
+    reviewed: false
+
+  - id: case-019
+    email: |
+      Hi,
+
+      We renamed our Slack channel from #proj-apollo to #apollo last week, and since then
+      Planwise hasn't posted any task notifications there. I reconnected the integration but
+      nothing changed. Other channels still get updates.
+
+      Ben
+    expected_category: technical
+    key_facts:
+      - Slack notifications stopped
+      - after channel was renamed
+    difficulty: medium
+    tags: []
+    notes: The cause is a user action (renaming), but the integration not working is still technical.
+    reviewed: false
+
+  - id: case-020
+    email: |
+      The dashboard has become really slow for our team, around 30 seconds to load a project
+      board. We have about 40 people and 2,000 tasks. Is something wrong on your side?
+    expected_category: technical
+    key_facts:
+      - dashboard loads very slowly
+    difficulty: easy
+    tags: []
+    reviewed: false
+
+  - id: case-021
+    email: |
+      When I try to sign in with Google I get an error page that says "Error 400: redirect_uri_mismatch".
+      Signing in with my email and password still works.
+    expected_category: technical
+    key_facts:
+      - Google sign-in shows an error page
+      - password login still works
+    difficulty: hard
+    tags: [policy_boundary]
+    notes: >
+      About login, which is usually account, but the customer's credentials are fine and the
+      product shows an error page. Policy: an error page during login is technical.
+      Contrast with case-037.
+    reviewed: false
+
+  - id: case-022
+    email: |
+      Hi, our company upgraded to the Team plan yesterday (invoice #INV-20931, already paid), but
+      the admin settings still show the Free plan and I can't invite more than 5 members.
+    expected_category: technical
+    key_facts:
+      - paid for Team plan
+      - account still limited to Free plan
+    difficulty: hard
+    tags: [policy_boundary]
+    notes: >
+      Policy "paid but not delivered is technical": the payment went through, the product
+      didn't apply the plan. Mentions an invoice, which pulls toward billing.
+    reviewed: false
+
+  - id: case-023
+    email: |
+      app wont open
+    expected_category: technical
+    key_facts:
+      - app won't open
+    difficulty: medium
+    tags: [very_short, typos]
+    notes: Three words, no detail about platform or error.
+    reviewed: false
+
+  - id: case-024
+    email: |
+      Wow, the "reliable" sync deleted my tasks again. Fantastic work, everyone.
+      That's the third time this month.
+    expected_category: technical
+    key_facts:
+      - sync deleted tasks
+      - happened repeatedly
+    difficulty: medium
+    tags: [sarcasm]
+    notes: Sarcastic praise; the actual content is a data-loss bug.
+    reviewed: false
+
+  - id: case-025
+    email: |
+      Hallo, seit Montag bekomme ich keine E-Mail-Benachrichtigungen mehr, wenn mir eine Aufgabe zugewiesen wird.
+      Could you check what's wrong? Danke!
+    expected_category: technical
+    key_facts:
+      - email notifications stopped
+      - since Monday
+    difficulty: medium
+    tags: [mixed_language]
+    notes: >
+      German then English. Notification emails are a product feature, so technical; a
+      password-reset or verification email not arriving would be account.
+    reviewed: false
+
+  - id: case-026
+    email: |
+      Google Calendar sync has been creating a duplicate of every event for a week now, so my
+      calendar is a mess. Please fix this. Also, since it's been broken all week, can I get
+      a refund for this month?
+    expected_category: technical
+    key_facts:
+      - calendar sync duplicates events
+      - asks for a refund
+    difficulty: hard
+    tags: [multi_topic, ambiguous]
+    notes: >
+      Two requests. The main thing to resolve is the broken sync; the refund depends on it.
+      A reader could reasonably pick billing.
+    reviewed: false
+
+  - id: case-027
+    email: |
+      Uploading PDF attachments fails with "Upload failed" for any file bigger than about 10 MB.
+      Our Pro plan says the limit is 100 MB per file.
+    expected_category: technical
+    key_facts:
+      - uploads fail for PDFs over 10 MB
+      - plan allows 100 MB
+    difficulty: easy
+    tags: []
+    reviewed: false
+
+  - id: case-028
+    email: |
+      teh search bar dosent find any tasks i created yesterday, only older ones. is search broken?
+    expected_category: technical
+    key_facts:
+      - search doesn't find recent tasks
+    difficulty: medium
+    tags: [typos]
+    notes: Typos in key words ("teh", "dosent").
+    reviewed: false
+
+  - id: case-029
+    email: |
+      Since your release last night, POST /v1/tasks returns HTTP 500 for every request from our
+      integration. GET requests still work. Request ID from the last failure: 7f3a-91c2.
+    expected_category: technical
+    key_facts:
+      - API returns 500 when creating tasks
+      - since last night's release
+    difficulty: easy
+    tags: []
+    reviewed: false
+
+  - id: case-030
+    email: |
+      My manager says she shared the Q3 roadmap project with me, but I can't see it anywhere in
+      my project list. She can see me listed as a member.
+    expected_category: technical
+    key_facts:
+      - can't see a shared project
+      - listed as a member
+    difficulty: hard
+    tags: [ambiguous]
+    notes: >
+      Could be read as account (access). Policy: account is access to your own account and
+      identity; content shared inside the product not showing up is the product not working,
+      so technical.
+    reviewed: false
+
+  # ---------------------------------------------------------------- account
+
+  - id: case-031
+    email: |
+      I've changed jobs and want to move my Planwise login to my new email address,
+      maria.k@northwind.io. How do I change it?
+    expected_category: account
+    key_facts:
+      - wants to change account email address
+    difficulty: easy
+    tags: []
+    reviewed: false
+
+  - id: case-032
+    email: |
+      I typed my password wrong a few times and now it says my account is locked for 24 hours.
+      Can you unlock it? I have a deadline today.
+    expected_category: account
+    key_facts:
+      - account locked after failed logins
+      - wants it unlocked
+    difficulty: easy
+    tags: []
+    reviewed: false
+
+  - id: case-033
+    email: |
+      I lost my phone, which had my authenticator app on it, and now I can't get past the
+      two-factor screen. How can I get back into my account?
+    expected_category: account
+    key_facts:
+      - lost two-factor device
+      - can't log in
+    difficulty: easy
+    tags: []
+    reviewed: false
+
+  - id: case-034
+    email: |
+      Under GDPR, please delete my Planwise account and all personal data you hold about me.
+      Please confirm once it's done.
+    expected_category: account
+    key_facts:
+      - wants account deleted
+      - wants personal data erased
+    difficulty: easy
+    tags: []
+    reviewed: false
+
+  - id: case-035
+    email: |
+      Hello,
+
+      The person who created our workspace, Jake, left the company last month and his email has
+      been deactivated. I'm now running the team and need to become the workspace owner so I can
+      manage members. How can ownership be transferred?
+
+      Thanks,
+      Aisha
+    expected_category: account
+    key_facts:
+      - wants workspace ownership transferred
+      - previous owner left the company
+    difficulty: medium
+    tags: []
+    notes: Workspace roles and ownership are part of account access and identity.
+    reviewed: false
+
+  - id: case-036
+    email: |
+      pw reset not working
+    expected_category: account
+    key_facts:
+      - password reset not working
+    difficulty: medium
+    tags: [very_short]
+    notes: Abbreviation "pw"; almost no context.
+    reviewed: false
+
+  - id: case-037
+    email: |
+      I reset my password five minutes ago, and now when I log in it says "Incorrect email or
+      password". I'm copying it straight from my password manager.
+    expected_category: account
+    key_facts:
+      - login says incorrect password
+      - just reset the password
+    difficulty: hard
+    tags: [policy_boundary]
+    notes: >
+      Contrast with case-021: here the product is rejecting the customer's credentials, with no
+      error page. Credential problems are account.
+    reviewed: false
+
+  - id: case-038
+    email: |
+      Thrilled that I have to verify my email address for the fifth time this week.
+      You guys clearly love security.
+    expected_category: account
+    key_facts:
+      - keeps being asked to verify email
+    difficulty: hard
+    tags: [sarcasm, ambiguous]
+    notes: >
+      Sarcastic. Repeated verification could be a bug (technical), but email verification is
+      identity, so account. A reader could reasonably pick technical.
+    reviewed: false
+
+  - id: case-039
+    email: |
+      Bonjour, je voudrais changer le nom affiché sur mon profil.
+      My last name is spelled wrong: it should be Lefèvre, not Lefevre.
+    expected_category: account
+    key_facts:
+      - wants to change name on profile
+    difficulty: medium
+    tags: [mixed_language]
+    notes: French then English; profile details are account.
+    reviewed: false
+
+  - id: case-040
+    email: |
+      i think i made 2 acounts by mistake with the same email?? one has all my projects.
+      how do i merge them
+    expected_category: account
+    key_facts:
+      - has two accounts by mistake
+      - wants them merged
+    difficulty: medium
+    tags: [typos]
+    notes: Lowercase with typos.
+    reviewed: false
+
+  - id: case-041
+    email: |
+      I'm the only admin in our workspace. Can I make my colleague Sam a second admin so he can
+      approve new members while I'm on leave?
+    expected_category: account
+    key_facts:
+      - wants to add a second admin
+    difficulty: easy
+    tags: []
+    reviewed: false
+
+  - id: case-042
+    email: |
+      Please close my Planwise account, I don't need it anymore. Also, will I still be charged
+      next month or does closing the account stop the subscription too?
+    expected_category: account
+    key_facts:
+      - wants account closed
+      - asks whether billing stops
+    difficulty: hard
+    tags: [multi_topic, policy_boundary]
+    notes: >
+      Main request is closing the account (account); the billing question follows from it.
+      Contrast with case-010, which cancels only the subscription.
+    reviewed: false
+
+  - id: case-043
+    email: |
+      I got an email saying there was a new login to my account from São Paulo. That wasn't me,
+      I'm in Toronto. What should I do?
+    expected_category: account
+    key_facts:
+      - unrecognized login
+      - worried account is compromised
+    difficulty: easy
+    tags: []
+    reviewed: false
+
+  - id: case-044
+    email: |
+      How do I require two-factor authentication for everyone in our workspace? Our security
+      team wants it on before the audit.
+    expected_category: account
+    key_facts:
+      - wants to require 2FA for the workspace
+    difficulty: medium
+    tags: [policy_boundary]
+    notes: >
+      Phrased as a how-to question, which could look general, but 2FA is explicitly account
+      in the policy.
+    reviewed: false
+
+  - id: case-045
+    email: |
+      I can't remember which email I used to sign up. I've tried my work and personal
+      addresses and neither gets a reset link. My name is Daniel Osei, if that helps.
+    expected_category: account
+    key_facts:
+      - doesn't remember signup email
+    difficulty: easy
+    tags: []
+    reviewed: false
+
+  # ---------------------------------------------------------------- general
+
+  - id: case-046
+    email: |
+      Does Planwise have an offline mode? I travel a lot and want to update tasks on flights.
+    expected_category: general
+    key_facts:
+      - asks about offline mode
+    difficulty: easy
+    tags: []
+    reviewed: false
+
+  - id: case-047
+    email: |
+      Feature request: please add a dark mode to the web app. My eyes will thank you.
+    expected_category: general
+    key_facts:
+      - requests dark mode
+    difficulty: easy
+    tags: []
+    reviewed: false
+
+  - id: case-048
+    email: |
+      We're a digital agency that sets up project tools for clients. Do you have a reseller
+      or partner program? Who should we talk to?
+    expected_category: general
+    key_facts:
+      - asks about a reseller or partner program
+    difficulty: easy
+    tags: []
+    reviewed: false
+
+  - id: case-049
+    email: |
+      Just wanted to say the new timeline view saved our product launch. The whole team uses it
+      now. Thanks!
+    expected_category: general
+    key_facts:
+      - positive feedback about the timeline view
+    difficulty: easy
+    tags: []
+    reviewed: false
+
+  - id: case-050
+    email: |
+      Our procurement team needs to know where Planwise stores customer data and whether you
+      have a GDPR data processing agreement. Is there a security page or contact for this?
+    expected_category: general
+    key_facts:
+      - asks where data is stored
+      - asks about a data processing agreement
+    difficulty: medium
+    tags: []
+    notes: Mentions GDPR like case-034, but asks for information rather than acting on an account.
+    reviewed: false
+
+  - id: case-051
+    email: |
+      I'm a teacher looking at Planwise for my students' group projects. Do you offer an
+      education discount?
+    expected_category: general
+    key_facts:
+      - asks about an education discount
+    difficulty: medium
+    tags: [policy_boundary]
+    notes: >
+      A pricing question before buying is a sales inquiry: general. Billing covers money on an
+      existing subscription (case-014).
+    reviewed: false
+
+  - id: case-052
+    email: |
+      do u have an android app
+    expected_category: general
+    key_facts:
+      - asks about an Android app
+    difficulty: easy
+    tags: [very_short]
+    notes: Five words; easy once you know product questions are general.
+    reviewed: false
+
+  - id: case-053
+    email: |
+      Oh sure, I'd LOVE to rebuild all 40 of my boards by hand. Any chance you'll ever support
+      importing from Trello?
+    expected_category: general
+    key_facts:
+      - asks about importing from Trello
+    difficulty: medium
+    tags: [sarcasm]
+    notes: Sarcastic, but it's a feature question, not a bug.
+    reviewed: false
+
+  - id: case-054
+    email: |
+      Olá! Vocês têm webinars de treinamento em português?
+      We have a new team in Lisbon starting next month.
+    expected_category: general
+    key_facts:
+      - asks about training webinars in Portuguese
+    difficulty: medium
+    tags: [mixed_language]
+    notes: Portuguese then English.
+    reviewed: false
+
+  - id: case-055
+    email: |
+      can i use planwise for planing my wedding or is it only for buisness stuff
+    expected_category: general
+    key_facts:
+      - asks if it can be used to plan a wedding
+    difficulty: easy
+    tags: [typos]
+    notes: Typos in a simple product question.
+    reviewed: false
+
+  - id: case-056
+    email: |
+      Your latest update moved the export button into the "..." menu and now nobody on my team
+      can find it. Please put it back where it was.
+    expected_category: general
+    key_facts:
+      - update moved the export button
+      - wants it moved back
+    difficulty: hard
+    tags: [ambiguous, policy_boundary]
+    notes: >
+      Sounds like a problem, but nothing is broken: the button works and was moved on purpose.
+      Feedback about design is general. A reader could reasonably pick technical.
+    reviewed: false
+
+  - id: case-057
+    email: |
+      Two quick questions: what's the rate limit on your public API, and do you have a status
+      page I can subscribe to?
+    expected_category: general
+    key_facts:
+      - asks about API rate limit
+      - asks about a status page
+    difficulty: medium
+    tags: [multi_topic]
+    notes: Two questions, both informational, so the category is the same either way.
+    reviewed: false
+
+  - id: case-058
+    email: |
+      Hi, I'm a frontend engineer and big fan of Planwise. Are you hiring?
+    expected_category: general
+    key_facts:
+      - asks about job openings
+    difficulty: easy
+    tags: []
+    reviewed: false
+
+  - id: case-059
+    email: |
+      We love Planwise in our design team and are thinking about moving the whole company
+      (about 200 people) over. What does onboarding look like for a company that size, and
+      could someone show us how SSO with Okta works?
+    expected_category: general
+    key_facts:
+      - considering moving 200 people
+      - asks about onboarding and an SSO demo
+    difficulty: medium
+    tags: [multi_topic]
+    notes: Mentions SSO, but it's a pre-sales request for a demo, not an account or login problem.
+    reviewed: false
+
+  - id: case-060
+    email: |
+      Hey! How much would the Team plan cost for 25 people if we pay yearly? We're on the free
+      plan right now.
+    expected_category: general
+    key_facts:
+      - asks Team plan price for 25 people
+      - yearly billing
+    difficulty: medium
+    tags: [policy_boundary]
+    notes: >
+      An existing free user asking a price before buying: a sales inquiry, so general.
+      v1's prompt lists "prices" under billing, so v1 is expected to get this wrong.
+    reviewed: false

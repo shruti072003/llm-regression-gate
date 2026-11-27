@@ -12,7 +12,8 @@ TARGET_PER_CATEGORY = 15
 
 dataset = load_dataset()
 cases = dataset.cases
-print(f"golden dataset v{dataset.version} ({dataset.content_hash}): {len(cases)} cases\n")
+reviewed = sum(c.reviewed for c in cases)
+print(f"golden dataset v{dataset.version} ({dataset.content_hash}): {len(cases)} cases, {reviewed} human-reviewed\n")
 
 by_category = Counter(c.expected_category for c in cases)
 print("category       cases   (target ~15)")

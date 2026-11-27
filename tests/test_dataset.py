@@ -18,6 +18,7 @@ def case(**overrides):
         "key_facts": ["charged twice"],
         "difficulty": "easy",
         "tags": [],
+        "reviewed": True,
     }
     return {**base, **overrides}
 

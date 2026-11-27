@@ -53,6 +53,15 @@ Rule for later: few-shot emails must never appear in the golden dataset (data le
 - Login and password problems are **account** (the customer's access or identity). An error page shown during login is **technical** (the product is broken).
 - *Chosen by Claude as defaults; confirm or change:* plan upgrades and downgrades are **billing**; closing an account is **account**; an email covering several topics gets the category of the main thing the customer needs resolved.
 - **Paid but not delivered is technical** *(Step 1.5)*: "I upgraded to Pro and paid, but the features aren't showing." The payment went through; the product didn't deliver, so the thing to resolve is technical. v1 says billing in 5/5 runs, a consistent failure for v2 to fix. Rule followed: never change a label because the model disagrees; decide what's right, then fix the prompt. Prompt versions are never edited after commit, so this goes into v2, not v1.
+- *Rules added while drafting the golden set (Step 2), each with a contrasting pair of cases:*
+  - **Cancelling a paid subscription but keeping the account is billing; closing the account is account** (case-010 vs case-042).
+  - **Pre-purchase questions about prices, plans or discounts are general** (sales inquiries); billing is money on an existing subscription (case-060, case-051 vs case-014). v1's prompt lists "prices" under billing, so v1 is expected to miss these.
+  - **A failed payment that locks features is billing,** not "paid but not delivered", because nothing was paid (case-009 vs case-022).
+  - **Credentials rejected is account; an error page during login is technical** (case-037 vs case-021).
+  - **Product notification emails not arriving is technical; password-reset or verification emails are account** (case-025 vs case-036, case-038).
+  - **Content shared inside the product not showing up is technical;** account means access to your own account, identity, workspace roles and ownership (case-030 vs case-035, case-041).
+  - **Design feedback where nothing is broken is general** (case-056).
+  - **Workspace-wide security settings such as requiring 2FA are account,** even when phrased as a how-to question (case-044).
 
 ## Prompt loader (`prompts.py`)
 
@@ -110,8 +119,8 @@ The length fix changed v1's results without touching `prompts/v1.yaml`. So the C
 
 ## Golden dataset (`data/golden.yaml`, `dataset.py`)
 
-**Emails and labels are written by me, never by an LLM**
-The dataset is the ground truth everything is measured against. LLM-written cases would test the model on its own kind of writing and label errors would go unnoticed. Claude builds the tooling and reviews labels; the content is mine.
+**The 60 cases were drafted by Claude and are marked `reviewed: false`** *(revised in Step 2; the original decision was that I write every case)*
+Original reasoning still holds: the dataset is the ground truth, LLM-written cases test the model on its own kind of writing, and label errors go unnoticed. I changed course to finish the pipeline end to end, so the honest fix is provenance tracking: every case has a required `reviewed` flag, all 60 start as `false`, and the stats script and reports show how many are human-reviewed. Before trusting a result, I review each label against the policy and set `reviewed: true`. In an interview: "LLM-drafted, human-verified", and only once that review is done.
 
 **YAML** (the guide says JSON; I first chose JSON and switched)
 I'll hand-write about 60 multi-line emails and edit them repeatedly. In JSON every line break is `\n`, every quote is escaped, and comments are impossible, so malformed cases are easy to create and hard to spot. YAML lets me write emails as plain text and explain tricky labels in comments. The guide's reason for JSON, "git-friendly", applies equally to YAML. The loader validates every field, which covers YAML's type surprises. Lesson: "the guide says so" isn't a reason; the guide's reason has to apply to my situation.
