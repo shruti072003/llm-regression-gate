@@ -1,0 +1,1 @@
+{"run_id":"20261127T055024Z-v1-2bd20f","created_at":"2026-11-27T05:50:24.514402Z","prompt_version":"v1","dataset_version":1,"dataset_hash":"c57c4fe71724","judge_version":"j1","git_sha":"3d4826236de5","accuracy":0.95,"summary_score":0.9555555555555556,"infra_error_rate":0.0,"served_models":["gpt-4.1-mini-2025-04-14"],"cost_usd":0.10028959999999999}
